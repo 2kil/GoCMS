@@ -17,23 +17,36 @@ func buildColumnTree() (map[uint]*models.Column, []models.Column) {
 
 	columnMap := make(map[uint]*models.Column)
 	for i := range all {
+		all[i].Children = nil
 		columnMap[all[i].ID] = &all[i]
 	}
 
 	for i := range all {
 		if all[i].ParentID != nil {
 			if parent, ok := columnMap[*all[i].ParentID]; ok {
-				parent.Children = append(parent.Children, all[i])
+				parent.Children = append(parent.Children, *columnMap[all[i].ID])
 			}
 		}
+	}
+
+	var buildNode func(*models.Column) models.Column
+	buildNode = func(column *models.Column) models.Column {
+		node := *column
+		node.Children = make([]models.Column, 0, len(column.Children))
+		for i := range column.Children {
+			if child, ok := columnMap[column.Children[i].ID]; ok {
+				node.Children = append(node.Children, buildNode(child))
+			}
+		}
+		return node
 	}
 
 	var roots []models.Column
 	for i := range all {
 		if all[i].ParentID == nil {
-			roots = append(roots, *columnMap[all[i].ID])
+			roots = append(roots, buildNode(columnMap[all[i].ID]))
 		} else if _, ok := columnMap[*all[i].ParentID]; !ok {
-			roots = append(roots, *columnMap[all[i].ID])
+			roots = append(roots, buildNode(columnMap[all[i].ID]))
 		}
 	}
 	return columnMap, roots
@@ -77,7 +90,6 @@ func ListColumns(c *gin.Context) {
 func ShowColumnEdit(c *gin.Context) {
 	idStr := c.Param("id")
 	var column models.Column
-	var allColumns []models.Column
 
 	if idStr != "" && idStr != "new" {
 		id, err := strconv.ParseUint(idStr, 10, 64)
@@ -85,9 +97,11 @@ func ShowColumnEdit(c *gin.Context) {
 			c.Redirect(http.StatusFound, "/adm1n/columns")
 			return
 		}
-		allColumns = filterColumnForParent(loadColumnsTreeFull(), column.ID)
-	} else {
-		allColumns = loadColumnsTreeFull()
+	}
+
+	flatColumns := loadColumnsTree()
+	if column.ID != 0 {
+		flatColumns = filterColumnForParentFlat(flatColumns, column.ID)
 	}
 
 	var parentID uint
@@ -97,11 +111,12 @@ func ShowColumnEdit(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "column_edit.html", gin.H{
 		"column":           column,
-		"all_columns":      allColumns,
+		"all_columns":      flatColumns,
 		"parent_id":        parentID,
 		"page_templates":   frontTemplatePageFiles(frontCache.getSettings()),
 		"current_template": selectedFrontTemplate(frontCache.getSettings()),
 		"nickname":         c.MustGet("nickname"),
+		"error":            c.Query("error"),
 	})
 }
 
@@ -115,6 +130,36 @@ func filterColumnForParent(columns []models.Column, excludeID uint) []models.Col
 		}
 	}
 	return result
+}
+
+func filterColumnForParentFlat(columns []models.Column, excludeID uint) []models.Column {
+	var result []models.Column
+	for _, c := range columns {
+		if c.ID != excludeID && !isDescendantColumn(c.ID, excludeID) {
+			result = append(result, c)
+		}
+	}
+	return result
+}
+
+func renderColumnEditWithError(c *gin.Context, column models.Column, message string) {
+	flatColumns := loadColumnsTree()
+	if column.ID != 0 {
+		flatColumns = filterColumnForParentFlat(flatColumns, column.ID)
+	}
+	var parentID uint
+	if column.ParentID != nil {
+		parentID = *column.ParentID
+	}
+	c.HTML(http.StatusOK, "column_edit.html", gin.H{
+		"column":           column,
+		"all_columns":      flatColumns,
+		"parent_id":        parentID,
+		"page_templates":   frontTemplatePageFiles(frontCache.getSettings()),
+		"current_template": selectedFrontTemplate(frontCache.getSettings()),
+		"nickname":         c.MustGet("nickname"),
+		"error":            message,
+	})
 }
 
 func isDescendantColumn(candidateID uint, columnID uint) bool {
@@ -183,7 +228,11 @@ func SaveColumn(c *gin.Context) {
 
 	if parentIDStr != "" {
 		pid, err := strconv.ParseUint(parentIDStr, 10, 64)
-		if err == nil && !isDescendantColumn(uint(pid), column.ID) && uint(pid) != column.ID {
+		if err == nil && (isDescendantColumn(uint(pid), column.ID) || uint(pid) == column.ID) {
+			renderColumnEditWithError(c, column, "父栏目不能选择当前栏目或其子栏目")
+			return
+		}
+		if err == nil {
 			pidUint := uint(pid)
 			column.ParentID = &pidUint
 		}
@@ -199,6 +248,8 @@ func SaveColumn(c *gin.Context) {
 	}
 	if err != nil {
 		log.Printf("保存栏目失败: %v", err)
+		renderColumnEditWithError(c, column, "保存失败: "+err.Error())
+		return
 	}
 
 	InvalidateCache()

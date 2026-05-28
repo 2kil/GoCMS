@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"log"
 	"os"
 	"path/filepath"
@@ -94,6 +96,14 @@ func Init() {
 		}
 		if v := sec.Key("dir").String(); v != "" {
 			Cfg.Static.Dir = v
+		}
+	}
+
+	if Cfg.Session.Secret == "cms-secret-key-2026" {
+		b := make([]byte, 32)
+		if _, err := rand.Read(b); err == nil {
+			Cfg.Session.Secret = hex.EncodeToString(b)
+			log.Println("警告: 使用随机生成的会话密钥，重启后会话将失效。建议在 config.ini 中配置固定密钥。")
 		}
 	}
 }

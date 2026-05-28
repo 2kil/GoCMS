@@ -115,10 +115,27 @@ func SavePost(c *gin.Context) {
 		post.ColumnID = nil
 	}
 
+	var dbErr error
 	if post.ID != 0 {
-		database.DB.Save(&post)
+		dbErr = database.DB.Save(&post).Error
 	} else {
-		database.DB.Create(&post)
+		dbErr = database.DB.Create(&post).Error
+	}
+	if dbErr != nil {
+		var columns []models.Column
+		database.DB.Order("sort_order asc").Find(&columns)
+		var columnID uint
+		if post.ColumnID != nil {
+			columnID = *post.ColumnID
+		}
+		c.HTML(http.StatusOK, "post_edit.html", gin.H{
+			"error":     "保存失败: " + dbErr.Error(),
+			"post":      post,
+			"columns":   columns,
+			"column_id": columnID,
+			"nickname":  c.MustGet("nickname"),
+		})
+		return
 	}
 
 	InvalidateCache()

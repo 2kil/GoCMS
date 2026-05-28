@@ -7,13 +7,20 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"shuaitesteel.com/cms/config"
 	"shuaitesteel.com/cms/database"
 	"shuaitesteel.com/cms/models"
 )
 
+var staticGenMu sync.Mutex
+var staticOutputDirOverride string
+
 func staticDir() string {
+	if staticOutputDirOverride != "" {
+		return staticOutputDirOverride
+	}
 	return config.Cfg.Static.Dir
 }
 
@@ -23,28 +30,52 @@ func writeStaticFile(tpl *template.Template, filename string, data map[string]in
 		log.Printf("静态生成: 创建目录失败 %s: %v", filepath.Dir(path), err)
 		return
 	}
-	f, err := os.Create(path)
+	tmpPath := path + ".tmp"
+	f, err := os.Create(tmpPath)
 	if err != nil {
-		log.Printf("静态生成: 创建文件失败 %s: %v", path, err)
+		log.Printf("静态生成: 创建文件失败 %s: %v", tmpPath, err)
 		return
 	}
-	defer f.Close()
 	if err := tpl.ExecuteTemplate(f, "index.html", data); err != nil {
+		f.Close()
+		os.Remove(tmpPath)
 		log.Printf("静态生成: 渲染失败 %s: %v", path, err)
+		return
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(tmpPath)
+		log.Printf("静态生成: 写入失败 %s: %v", tmpPath, err)
+		return
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		os.Remove(tmpPath)
+		log.Printf("静态生成: 重命名失败 %s: %v", path, err)
 	}
 }
 
-func cleanGeneratedStatic() {
-	dir := staticDir()
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return
-	}
-	for _, entry := range entries {
-		if err := os.RemoveAll(filepath.Join(dir, entry.Name())); err != nil {
-			log.Printf("静态生成: 清理旧文件失败 %s: %v", entry.Name(), err)
+func swapStaticDir(tmpDir, dir string) error {
+	oldDir := dir + ".old"
+	os.RemoveAll(oldDir)
+
+	if _, err := os.Stat(dir); err == nil {
+		if err := os.Rename(dir, oldDir); err != nil {
+			return err
 		}
 	}
+
+	if err := os.Rename(tmpDir, dir); err != nil {
+		if _, oldErr := os.Stat(oldDir); oldErr == nil {
+			if restoreErr := os.Rename(oldDir, dir); restoreErr != nil {
+				log.Printf("静态生成: 恢复旧目录失败: %v", restoreErr)
+			}
+		}
+		return err
+	}
+
+	if err := os.RemoveAll(oldDir); err != nil {
+		log.Printf("静态生成: 清理旧目录失败: %v", err)
+	}
+	return nil
 }
 
 func copyFrontTemplateAssets(templateName string) {
@@ -98,16 +129,26 @@ func GenerateStatic() {
 	if !config.Cfg.Static.Enable {
 		return
 	}
+
+	staticGenMu.Lock()
+	defer staticGenMu.Unlock()
+
 	settings := frontCache.getSettings()
 	tpl := frontTemplates(settings)
 	if tpl == nil {
 		return
 	}
 
-	dir := staticDir()
-	cleanGeneratedStatic()
-	os.MkdirAll(filepath.Join(dir, "post"), 0755)
-	os.MkdirAll(filepath.Join(dir, "column"), 0755)
+	dir := config.Cfg.Static.Dir
+	tmpDir := dir + ".tmp"
+
+	os.RemoveAll(tmpDir)
+	os.MkdirAll(filepath.Join(tmpDir, "post"), 0755)
+	os.MkdirAll(filepath.Join(tmpDir, "column"), 0755)
+
+	staticOutputDirOverride = tmpDir
+	defer func() { staticOutputDirOverride = "" }()
+
 	copyFrontTemplateAssets(selectedFrontTemplate(settings))
 
 	customTags := frontCache.getCustomTags()
@@ -136,6 +177,13 @@ func GenerateStatic() {
 		genColumnStatic(tpl, col, columns, settings)
 	}
 
+	staticOutputDirOverride = ""
+	if err := swapStaticDir(tmpDir, dir); err != nil {
+		log.Printf("静态生成: 交换目录失败: %v", err)
+		os.RemoveAll(tmpDir)
+		return
+	}
+
 	log.Printf("静态页面已全量生成到 %s/", dir)
 }
 
@@ -148,6 +196,9 @@ func GenerateStaticIndex() {
 	if !config.Cfg.Static.Enable {
 		return
 	}
+	staticGenMu.Lock()
+	defer staticGenMu.Unlock()
+
 	settings := frontCache.getSettings()
 	tpl := frontTemplates(settings)
 	if tpl == nil {
@@ -174,6 +225,9 @@ func GenerateStaticPost(slug string) {
 	if !config.Cfg.Static.Enable {
 		return
 	}
+	staticGenMu.Lock()
+	defer staticGenMu.Unlock()
+
 	settings := frontCache.getSettings()
 	tpl := frontTemplates(settings)
 	if tpl == nil {
@@ -203,6 +257,9 @@ func GenerateStaticColumnByID(columnID uint) {
 	if !config.Cfg.Static.Enable {
 		return
 	}
+	staticGenMu.Lock()
+	defer staticGenMu.Unlock()
+
 	settings := frontCache.getSettings()
 	tpl := frontTemplates(settings)
 	if tpl == nil {

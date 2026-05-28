@@ -1,5 +1,8 @@
 {{template "header.html" dict "title" "编辑栏目" "nickname" .nickname}}
 <h2 class="page-title mb-4">{{if .column.ID}}编辑栏目{{else}}新建栏目{{end}}</h2>
+{{if .error}}
+<div class="alert alert-danger py-2">{{.error}}</div>
+{{end}}
 <div class="card shadow-sm">
     <div class="card-body">
         <form method="post" action="/adm1n/columns/save/{{if .column.ID}}{{.column.ID}}{{else}}new{{end}}">
@@ -37,11 +40,6 @@
                     <option value="">顶级栏目</option>
                     {{range .all_columns}}
                     <option value="{{.ID}}" {{if eq $.parent_id .ID}}selected{{end}}>{{.Name}}</option>
-                    {{if .Children}}
-                    {{range .Children}}
-                    <option value="{{.ID}}" {{if eq $.parent_id .ID}}selected{{end}}>{{.Name}}</option>
-                    {{end}}
-                    {{end}}
                     {{end}}
                 </select>
             </div>

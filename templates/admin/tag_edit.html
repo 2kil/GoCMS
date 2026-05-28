@@ -1,5 +1,8 @@
 {{template "header.html" dict "title" "编辑标签" "nickname" .nickname}}
 <h2 class="page-title mb-4">{{if .tag.ID}}编辑标签{{else}}新建标签{{end}}</h2>
+{{if .error}}
+<div class="alert alert-danger py-2">{{.error}}</div>
+{{end}}
 <div class="card shadow-sm">
     <div class="card-body">
         <form method="post" action="/adm1n/tags/save/{{if .tag.ID}}{{.tag.ID}}{{else}}new{{end}}">

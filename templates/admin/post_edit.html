@@ -1,5 +1,8 @@
 {{template "header.html" dict "title" "编辑文章" "nickname" .nickname}}
 <h2 class="page-title mb-4">{{if .post.ID}}编辑文章{{else}}新建文章{{end}}</h2>
+{{if .error}}
+<div class="alert alert-danger py-2">{{.error}}</div>
+{{end}}
 <div class="card shadow-sm">
     <div class="card-body">
         <form method="post" action="/adm1n/posts/save/{{if .post.ID}}{{.post.ID}}{{else}}new{{end}}">

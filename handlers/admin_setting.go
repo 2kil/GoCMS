@@ -67,43 +67,47 @@ func SaveAccount(c *gin.Context) {
 	var user models.User
 	database.DB.First(&user, userID)
 
-	if username != "" && username != user.Username {
-		if oldPassword == "" {
-			c.Redirect(http.StatusFound, "/adm1n/settings")
-			return
-		}
-		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
-			c.Redirect(http.StatusFound, "/adm1n/settings")
-			return
-		}
+	showError := func(msg string) {
+		settingMap := loadSettingMap()
+		c.HTML(http.StatusOK, "settings.html", gin.H{
+			"error":          msg,
+			"settings":       settingMap,
+			"frontTemplates": availableFrontTemplates(),
+			"username":       user.Username,
+			"nickname":       c.MustGet("nickname"),
+		})
+	}
+
+	wantChangeUsername := username != "" && username != user.Username
+	wantChangePassword := newPassword != ""
+
+	if !wantChangeUsername && !wantChangePassword {
+		c.Redirect(http.StatusFound, "/adm1n/settings")
+		return
+	}
+
+	if oldPassword == "" {
+		showError("修改用户名或密码时必须填写当前密码")
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
+		showError("当前密码错误")
+		return
+	}
+
+	if wantChangeUsername {
 		var existing models.User
 		if database.DB.Where("username = ?", username).First(&existing).Error == nil {
-			var settings []models.Setting
-			database.DB.Find(&settings)
-			settingMap := make(map[string]string)
-			for _, s := range settings {
-				settingMap[s.Key] = s.Value
-			}
-			c.HTML(http.StatusOK, "settings.html", gin.H{
-				"error":          "用户名已存在",
-				"settings":       settingMap,
-				"frontTemplates": availableFrontTemplates(),
-				"username":       user.Username,
-				"nickname":       c.MustGet("nickname"),
-			})
+			showError("用户名已存在")
 			return
 		}
 		user.Username = username
 	}
 
-	if newPassword != "" {
-		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
-			c.Redirect(http.StatusFound, "/adm1n/settings")
-			return
-		}
+	if wantChangePassword {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 		if err != nil {
-			c.Redirect(http.StatusFound, "/adm1n/settings")
+			showError("密码加密失败")
 			return
 		}
 		user.Password = string(hashed)

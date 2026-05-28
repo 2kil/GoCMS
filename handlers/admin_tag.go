@@ -57,14 +57,27 @@ func SaveTag(c *gin.Context) {
 	tag.Value = c.PostForm("value")
 
 	if tag.Name == "" || !customTagKeyPattern.MatchString(tag.Key) {
-		c.Redirect(http.StatusFound, "/adm1n/tags/edit/"+idStr)
+		c.HTML(http.StatusOK, "tag_edit.html", gin.H{
+			"error":    "标签名称不能为空，标签变量只能使用字母、数字、下划线且以字母开头",
+			"tag":      tag,
+			"nickname": c.MustGet("nickname"),
+		})
 		return
 	}
 
+	var dbErr error
 	if tag.ID != 0 {
-		database.DB.Save(&tag)
+		dbErr = database.DB.Save(&tag).Error
 	} else {
-		database.DB.Create(&tag)
+		dbErr = database.DB.Create(&tag).Error
+	}
+	if dbErr != nil {
+		c.HTML(http.StatusOK, "tag_edit.html", gin.H{
+			"error":    "保存失败: " + dbErr.Error(),
+			"tag":      tag,
+			"nickname": c.MustGet("nickname"),
+		})
+		return
 	}
 
 	InvalidateCache()
