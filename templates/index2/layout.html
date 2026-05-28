@@ -1,0 +1,104 @@
+{{define "front/layout"}}
+<!DOCTYPE html>
+<html class="wide wow-animation" lang="zh-CN">
+<head>
+    <title>{{block "front_title" .}}{{index .settings "site_title"}}{{end}}</title>
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    {{with index .settings "site_keywords"}}<meta name="keywords" content="{{.}}">{{end}}
+    {{with index .settings "site_description"}}<meta name="description" content="{{.}}">{{end}}
+    {{with index .settings "site_favicon"}}{{if .}}<link rel="icon" href="{{.}}" type="image/x-icon">{{else}}<link rel="icon" href="/images/favicon.ico" type="image/x-icon">{{end}}{{else}}<link rel="icon" href="/images/favicon.ico" type="image/x-icon">{{end}}
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:100,300,300i,400,500,600,700,900%7CRaleway:500">
+    <link rel="stylesheet" href="/css/bootstrap.css">
+    <link rel="stylesheet" href="/css/fonts.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="preloader">
+        <div class="wrapper-triangle">
+            <div class="pen">
+                <div class="line-triangle"><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div></div>
+                <div class="line-triangle"><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div></div>
+                <div class="line-triangle"><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div><div class="triangle"></div></div>
+            </div>
+        </div>
+    </div>
+    <div class="page">
+        <header class="section page-header">
+            <div class="rd-navbar-wrap">
+                <nav class="rd-navbar rd-navbar-creative context-dark" data-layout="rd-navbar-fixed" data-sm-layout="rd-navbar-fixed" data-md-layout="rd-navbar-fixed" data-md-device-layout="rd-navbar-fixed" data-lg-layout="rd-navbar-static" data-lg-device-layout="rd-navbar-fixed" data-xl-layout="rd-navbar-static" data-xl-device-layout="rd-navbar-static" data-xxl-layout="rd-navbar-static" data-xxl-device-layout="rd-navbar-static" data-lg-stick-up-offset="80px" data-xl-stick-up-offset="80px" data-xxl-stick-up-offset="80px" data-lg-stick-up="true" data-xl-stick-up="true" data-xxl-stick-up="true">
+                    <div class="rd-navbar-collapse-toggle rd-navbar-fixed-element-1" data-rd-navbar-toggle=".rd-navbar-collapse"><span></span></div>
+                    <div class="rd-navbar-main-outer">
+                        <div class="rd-navbar-main">
+                            <div class="rd-navbar-panel">
+                                <button class="rd-navbar-toggle" data-rd-navbar-toggle=".rd-navbar-nav-wrap"><span></span></button>
+                                <div class="rd-navbar-brand">
+                                    <a class="brand" href="/"><img class="brand-logo-dark" src="/images/logo-default-426x55.png" alt="{{index .settings "site_title"}}" width="213" height="27"><img class="brand-logo-light" src="/images/logo-inverse-426x55.png" alt="{{index .settings "site_title"}}" width="213" height="27"></a>
+                                </div>
+                            </div>
+                            <div class="rd-navbar-main-element">
+                                <div class="rd-navbar-nav-wrap">
+                                    <ul class="rd-navbar-nav">
+                                        <li class="rd-nav-item"><a class="rd-nav-link" href="/">首页</a></li>
+                                        {{range .columns}}
+                                        <li class="rd-nav-item"><a class="rd-nav-link" href="/column/{{.Slug}}.html">{{.Name}}</a></li>
+                                        {{end}}
+                                    </ul>
+                                </div>
+                                <div class="rd-navbar-collapse">
+                                    <ul class="rd-navbar-contacts-3">
+                                        {{with index .settings "company_phone"}}<li><a class="phone" href="tel:{{.}}">{{.}}</a></li>{{end}}
+                                        {{with index .settings "company_email"}}<li><a class="mail" href="mailto:{{.}}">{{.}}</a></li>{{end}}
+                                    </ul>
+                                    <a class="button button-xs button-outline button-default-outline-2 button-winona" href="/column/contact.html"><span class="button-text">联系我们</span><span class="icon linearicons-pencil"></span></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        {{block "front_content" .}}{{end}}
+
+        <footer class="section footer-corporate context-dark">
+            <div class="container">
+                <div class="section-lg">
+                    <div class="row row-50 justify-content-sm-between">
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <h6 class="footer-corporate-title oh-desktop"><span class="d-inline-block wow slideInUp">关于我们</span></h6>
+                            <p class="wow fadeInRight">{{with index .settings "company_name"}}{{.}}{{else}}{{index .settings "site_description"}}{{end}}</p>
+                        </div>
+                        <div class="col-sm-5 col-md-4 col-lg-3">
+                            <h6 class="footer-corporate-title oh-desktop"><span class="d-inline-block wow slideInUp">联系方式</span></h6>
+                            <ul class="footer-creative-contacts d-inline-block d-md-block">
+                                {{with index .settings "company_phone"}}<li class="wow fadeInLeft"><p class="footer-creative-contacts-title">电话</p><a class="phone" href="tel:{{.}}">{{.}}</a></li>{{end}}
+                                {{with index .settings "company_address"}}<li class="wow fadeInLeft" data-wow-delay=".05s"><p class="footer-creative-contacts-title">地址</p><a class="address" href="#">{{.}}</a></li>{{end}}
+                                {{with index .settings "company_email"}}<li class="wow fadeInLeft" data-wow-delay=".1s"><p class="footer-creative-contacts-title">邮箱</p><a class="mail" href="mailto:{{.}}">{{.}}</a></li>{{end}}
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="footer-corporate-title oh-desktop"><span class="d-inline-block wow slideInUp">快速链接</span></h6>
+                            <ul class="footer-corporate-list d-inline-block d-sm-block wow fadeInUp">
+                                <li><a href="/">首页</a></li>
+                                {{range .columns}}<li><a href="/column/{{.Slug}}.html">{{.Name}}</a></li>{{end}}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-corporate-panel">
+                <div class="container">
+                    <p class="rights">{{safe (index .settings "site_footer")}}</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <div class="snackbars" id="form-output-global"></div>
+    <script src="/js/core.min.js"></script>
+    <script src="/js/script.js"></script>
+</body>
+</html>
+{{end}}

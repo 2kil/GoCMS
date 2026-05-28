@@ -1,0 +1,94 @@
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] Loaded HTML Templates (12): 
+	- tags.html
+	- 
+	- column_edit.html
+	- columns.html
+	- dashboard.html
+	- footer.html
+	- post_edit.html
+	- settings.html
+	- tag_edit.html
+	- header.html
+	- login.html
+	- posts.html
+
+[GIN-debug] GET    /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
+[GIN-debug] HEAD   /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
+[GIN-debug] GET    /admin-assets/css/*filepath --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
+[GIN-debug] HEAD   /admin-assets/css/*filepath --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
+[GIN-debug] GET    /adm1n/login              --> shuaitesteel.com/cms/handlers.ShowLogin (4 handlers)
+[GIN-debug] POST   /adm1n/login              --> shuaitesteel.com/cms/handlers.Login (4 handlers)
+[GIN-debug] GET    /adm1n/logout             --> shuaitesteel.com/cms/handlers.Logout (4 handlers)
+[GIN-debug] GET    /adm1n/dashboard          --> shuaitesteel.com/cms/handlers.Dashboard (6 handlers)
+[GIN-debug] GET    /adm1n/posts              --> shuaitesteel.com/cms/handlers.ListPosts (6 handlers)
+[GIN-debug] GET    /adm1n/posts/edit/:id     --> shuaitesteel.com/cms/handlers.ShowPostEdit (6 handlers)
+[GIN-debug] POST   /adm1n/posts/save/:id     --> shuaitesteel.com/cms/handlers.SavePost (6 handlers)
+[GIN-debug] GET    /adm1n/posts/delete/:id   --> shuaitesteel.com/cms/handlers.DeletePost (6 handlers)
+[GIN-debug] GET    /adm1n/posts/toggle/:id   --> shuaitesteel.com/cms/handlers.TogglePost (6 handlers)
+[GIN-debug] GET    /adm1n/columns            --> shuaitesteel.com/cms/handlers.ListColumns (6 handlers)
+[GIN-debug] GET    /adm1n/columns/edit/:id   --> shuaitesteel.com/cms/handlers.ShowColumnEdit (6 handlers)
+[GIN-debug] POST   /adm1n/columns/save/:id   --> shuaitesteel.com/cms/handlers.SaveColumn (6 handlers)
+[GIN-debug] POST   /adm1n/columns/reorder    --> shuaitesteel.com/cms/handlers.ReorderColumns (6 handlers)
+[GIN-debug] GET    /adm1n/columns/delete/:id --> shuaitesteel.com/cms/handlers.DeleteColumn (6 handlers)
+[GIN-debug] GET    /adm1n/tags               --> shuaitesteel.com/cms/handlers.ListTags (6 handlers)
+[GIN-debug] GET    /adm1n/tags/edit/:id      --> shuaitesteel.com/cms/handlers.ShowTagEdit (6 handlers)
+[GIN-debug] POST   /adm1n/tags/save/:id      --> shuaitesteel.com/cms/handlers.SaveTag (6 handlers)
+[GIN-debug] GET    /adm1n/tags/delete/:id    --> shuaitesteel.com/cms/handlers.DeleteTag (6 handlers)
+[GIN-debug] GET    /adm1n/settings           --> shuaitesteel.com/cms/handlers.ShowSettings (6 handlers)
+[GIN-debug] POST   /adm1n/settings           --> shuaitesteel.com/cms/handlers.SaveSettings (6 handlers)
+[GIN-debug] POST   /adm1n/settings/account   --> shuaitesteel.com/cms/handlers.SaveAccount (6 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN] 2026/05/24 - 13:46:56 | 200 |  64.88ms |       127.0.0.1 | GET      "/"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/column/about.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/column/cases.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/column/company-news.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/column/company-profile.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  624.4µs |       127.0.0.1 | GET      "/column/contact.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/column/culture.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/column/industry-news.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  510.8µs |       127.0.0.1 | GET      "/column/news.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  505.1µs |       127.0.0.1 | GET      "/column/products.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/column/steel-pipe.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |    518µs |       127.0.0.1 | GET      "/column/steel-plate.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  522.1µs |       127.0.0.1 | GET      "/post/cms-launch.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/post/company-profile.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/post/contact-us.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/post/culture.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/post/project-case-demo.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/post/steel-pipe-products.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/post/steel-plate-products.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/post/why-static-site.html"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/images/favicon.ico"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  503.7µs |       127.0.0.1 | GET      "/css/bootstrap.css"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  503.3µs |       127.0.0.1 | GET      "/css/fonts.css"
+[GIN] 2026/05/24 - 13:46:56 | 200 |   1.02ms |       127.0.0.1 | GET      "/css/style.css"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/images/logo-default-426x55.png"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/images/logo-inverse-426x55.png"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  504.2µs |       127.0.0.1 | GET      "/images/services-7-420x320.jpg"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  505.1µs |       127.0.0.1 | GET      "/images/services-8-420x320.jpg"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/images/services-9-420x320.jpg"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  504.8µs |       127.0.0.1 | GET      "/images/services-10-420x320.jpg"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  504.5µs |       127.0.0.1 | GET      "/images/services-11-420x320.jpg"
+[GIN] 2026/05/24 - 13:46:56 | 200 |  789.9µs |       127.0.0.1 | GET      "/images/video-1-1110x830.jpg"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/images/post-7-570x528.jpg"
+[GIN] 2026/05/24 - 13:46:56 | 200 |       0s |       127.0.0.1 | GET      "/images/project-9-270x220.jpg"
+[GIN] 2026/05/24 - 13:46:57 | 200 |       0s |       127.0.0.1 | GET      "/images/clients-2-200x90.png"
+[GIN] 2026/05/24 - 13:46:57 | 200 |       0s |       127.0.0.1 | GET      "/images/clients-4-200x90.png"
+[GIN] 2026/05/24 - 13:46:57 | 200 |       0s |       127.0.0.1 | GET      "/images/clients-6-200x90.png"
+[GIN] 2026/05/24 - 13:46:57 | 200 |       0s |       127.0.0.1 | GET      "/images/clients-22-200x90.png"
+[GIN] 2026/05/24 - 13:46:57 | 200 |       0s |       127.0.0.1 | GET      "/images/clients-3-200x90.png"
+[GIN] 2026/05/24 - 13:46:57 | 200 |       0s |       127.0.0.1 | GET      "/images/clients-23-200x90.png"
+[GIN] 2026/05/24 - 13:46:57 | 200 |   3.15ms |       127.0.0.1 | GET      "/js/core.min.js"
+[GIN] 2026/05/24 - 13:46:57 | 200 |  633.3µs |       127.0.0.1 | GET      "/js/script.js"
+[GIN] 2026/05/24 - 13:46:57 | 200 |    1.5ms |       127.0.0.1 | GET      "/images/about-1-835x418.jpg"
+[GIN] 2026/05/24 - 13:46:57 | 200 |  788.9µs |       127.0.0.1 | GET      "/images/about-2-835x418.jpg"
+[GIN] 2026/05/24 - 13:46:57 | 200 |  797.6µs |       127.0.0.1 | GET      "/images/about-3-835x418.jpg"
+[GIN] 2026/05/24 - 13:46:57 | 200 |      1ms |       127.0.0.1 | GET      "/images/about-4-835x418.jpg"

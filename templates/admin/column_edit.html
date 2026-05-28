@@ -1,0 +1,59 @@
+{{template "header.html" dict "title" "编辑栏目" "nickname" .nickname}}
+<h2 class="page-title mb-4">{{if .column.ID}}编辑栏目{{else}}新建栏目{{end}}</h2>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="post" action="/adm1n/columns/save/{{if .column.ID}}{{.column.ID}}{{else}}new{{end}}">
+            <div class="mb-3">
+                <label class="form-label">名称</label>
+                <input type="text" name="name" class="form-control" value="{{.column.Name}}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Slug</label>
+                <input type="text" name="slug" class="form-control" value="{{.column.Slug}}" placeholder="留空则自动生成">
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" name="is_page" class="form-check-input" id="is_page" {{if .column.IsPage}}checked{{end}}>
+                <label class="form-check-label" for="is_page">单页栏目</label>
+                <div class="form-text">勾选后，该栏目页展示下方内容，不再展示文章列表。</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">单页模板文件</label>
+                <select name="page_template" class="form-select">
+                    <option value="">使用下方自定义内容</option>
+                    {{range .page_templates}}
+                    <option value="{{.}}" {{if eq $.column.PageTemplate .}}selected{{end}}>{{.}}</option>
+                    {{end}}
+                </select>
+                <div class="form-text">来自当前前台模板 <code>{{.current_template}}</code> 目录下的 HTML 文件。选择后会优先渲染该文件；不选择则使用下方自定义 HTML。</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">单页内容 (HTML / 模板代码)</label>
+                <textarea name="content" class="form-control" rows="10" placeholder="可以编写 HTML，也可以使用下方提示中的模板变量">{{.column.Content}}</textarea>
+                <div class="form-text">该内容会作为可信 HTML 输出，仅建议管理员编辑。可用变量：<code>{{`{{index .settings "company_phone"}}`}}</code>、<code>{{`{{index .custom_tags "service_phone"}}`}}</code>、<code>{{`{{asset "images/logo.png"}}`}}</code></div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">父栏目</label>
+                <select name="parent_id" class="form-select">
+                    <option value="">顶级栏目</option>
+                    {{range .all_columns}}
+                    <option value="{{.ID}}" {{if eq $.parent_id .ID}}selected{{end}}>{{.Name}}</option>
+                    {{if .Children}}
+                    {{range .Children}}
+                    <option value="{{.ID}}" {{if eq $.parent_id .ID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                    {{end}}
+                    {{end}}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">排序</label>
+                <input type="number" name="sort_order" class="form-control" value="{{.column.SortOrder}}">
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-deepgreen">保存</button>
+                <a href="/adm1n/columns" class="btn btn-outline-deepgreen">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{{template "footer.html"}}

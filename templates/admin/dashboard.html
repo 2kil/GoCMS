@@ -1,0 +1,24 @@
+{{template "header.html" dict "title" "仪表盘" "nickname" .nickname}}
+<div class="mb-4">
+    <h2 class="page-title mb-1">仪表盘</h2>
+    <div class="text-muted">站点内容概览与管理入口</div>
+</div>
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card stat-card text-center shadow-sm">
+            <div class="card-body py-4">
+                <div class="display-4 fw-bold">{{.postCount}}</div>
+                <div class="text-muted fw-semibold">文章总数</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card text-center shadow-sm">
+            <div class="card-body py-4">
+                <div class="display-4 fw-bold">{{.columnCount}}</div>
+                <div class="text-muted fw-semibold">栏目总数</div>
+            </div>
+        </div>
+    </div>
+</div>
+{{template "footer.html"}}

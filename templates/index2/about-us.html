@@ -1,0 +1,60 @@
+<section class="bg-gray-7">
+    <div class="breadcrumbs-custom box-transform-wrap context-dark">
+        <div class="container">
+            <h3 class="breadcrumbs-custom-title">关于我们</h3>
+            <div class="breadcrumbs-custom-decor"></div>
+        </div>
+        <div class="box-transform" style="background-image: url(/images/bg-breadcrumbs.jpg);"></div>
+    </div>
+    <div class="container">
+        <ul class="breadcrumbs-custom-path">
+            <li><a href="/">首页</a></li>
+            <li><a href="#">页面</a></li>
+            <li class="active">关于我们</li>
+        </ul>
+    </div>
+</section>
+
+<section class="section section-lg bg-default">
+    <div class="container">
+        <div class="tabs-custom row row-50 justify-content-center flex-lg-row-reverse text-center text-md-start" id="tabs-4">
+            <div class="col-lg-4 col-xl-3">
+                <h5 class="text-spacing-200">{{with index .settings "company_short_name"}}{{.}}{{else}}企业简介{{end}}</h5>
+                <ul class="nav list-category list-category-down-md-inline-block">
+                    <li class="list-category-item wow fadeInRight" role="presentation" data-wow-delay="0s"><a class="active" href="#tabs-4-1" data-bs-toggle="tab">公司介绍</a></li>
+                    <li class="list-category-item wow fadeInRight" role="presentation" data-wow-delay=".1s"><a href="#tabs-4-2" data-bs-toggle="tab">企业理念</a></li>
+                    <li class="list-category-item wow fadeInRight" role="presentation" data-wow-delay=".2s"><a href="#tabs-4-3" data-bs-toggle="tab">服务优势</a></li>
+                    <li class="list-category-item wow fadeInRight" role="presentation" data-wow-delay=".3s"><a href="#tabs-4-4" data-bs-toggle="tab">联系方式</a></li>
+                </ul>
+                <a class="button button-lg button-primary button-winona" href="/column/contact.html">联系我们</a>
+            </div>
+            <div class="col-lg-8 col-xl-9">
+                <div class="tab-content tab-content-1">
+                    <div class="tab-pane fade show active" id="tabs-4-1">
+                        <h4>公司简介</h4>
+                        <p>{{with index .settings "company_name"}}{{.}}{{else}}{{index .settings "site_title"}}{{end}} 致力于为客户提供稳定、专业、可持续的内容与服务支持。</p>
+                        <p>{{index .settings "site_description"}}</p>
+                        <img src="/images/about-1-835x418.jpg" alt="公司简介" width="835" height="418">
+                    </div>
+                    <div class="tab-pane fade" id="tabs-4-2">
+                        <h4>企业理念</h4>
+                        <p>坚持内容为核心、体验为导向、服务为基础，持续完善网站运营能力。</p>
+                        <img src="/images/about-2-835x418.jpg" alt="企业理念" width="835" height="418">
+                    </div>
+                    <div class="tab-pane fade" id="tabs-4-3">
+                        <h4>服务优势</h4>
+                        <p>支持静态生成、栏目单页、自定义标签、文章定时发布与后台可视化管理。</p>
+                        <img src="/images/about-3-835x418.jpg" alt="服务优势" width="835" height="418">
+                    </div>
+                    <div class="tab-pane fade" id="tabs-4-4">
+                        <h4>联系方式</h4>
+                        <p>电话：{{index .settings "company_phone"}}</p>
+                        <p>邮箱：{{index .settings "company_email"}}</p>
+                        <p>地址：{{index .settings "company_address"}}</p>
+                        <img src="/images/about-4-835x418.jpg" alt="联系方式" width="835" height="418">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

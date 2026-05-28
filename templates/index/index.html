@@ -1,0 +1,40 @@
+{{define "front_title"}}{{if .column}}{{.column.Name}} - {{end}}{{index .settings "site_title"}}{{end}}
+{{define "front_content"}}
+{{if .post}}
+<article class="post-full">
+    <h1>{{.post.Title}}</h1>
+    <div class="post-meta">
+        {{if .post.Column}}栏目: {{.post.Column.Name}} | {{end}}
+        {{if .post.User}}作者: {{.post.User.Nickname}} | {{end}}
+        发布于: {{.post.CreatedAt.Format "2006-01-02"}}
+    </div>
+    {{if .post.CoverImage}}<img src="{{.post.CoverImage}}" alt="{{.post.Title}}" style="max-width:100%;border-radius:8px;margin:20px 0;">{{end}}
+    <div class="content">
+        {{md .post.Content}}
+    </div>
+</article>
+{{else if and .column .column.IsPage}}
+<article class="post-full">
+    <h1>{{.column.Name}}</h1>
+    <div class="content">
+        {{render .column.Content .}}
+    </div>
+</article>
+{{else}}
+<section class="posts">
+    {{range .posts}}
+    <div class="post-card">
+        <h2><a href="/post/{{.Slug}}.html">{{.Title}}</a></h2>
+        <div class="post-meta">
+            {{if .Column}}栏目: {{.Column.Name}} | {{end}}
+            发布于: {{.CreatedAt.Format "2006-01-02"}}
+        </div>
+        <p>{{.Summary}}</p>
+    </div>
+    {{else}}
+    <p style="text-align:center;padding:40px;color:#888;">暂无文章</p>
+    {{end}}
+</section>
+{{end}}
+{{end}}
+{{template "front/layout" .}}

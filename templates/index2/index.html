@@ -1,0 +1,252 @@
+{{define "front_title"}}{{if .post}}{{.post.Title}} - {{else if .column}}{{.column.Name}} - {{end}}{{index .settings "site_title"}}{{end}}
+
+{{define "front_content"}}
+{{if .post}}
+<section class="breadcrumbs-custom bg-image context-dark" style="background-image: url(/images/bg-breadcrumbs.jpg);">
+    <div class="container">
+        <h2 class="breadcrumbs-custom-title">{{.post.Title}}</h2>
+    </div>
+</section>
+<section class="section section-lg bg-default">
+    <div class="container">
+        <article class="post-single">
+            <div class="group-md post-single-meta">
+                {{if .post.Column}}<span>栏目：{{.post.Column.Name}}</span>{{end}}
+                {{if .post.User}}<span>作者：{{.post.User.Nickname}}</span>{{end}}
+                <time datetime="{{.post.CreatedAt.Format "2006-01-02"}}">{{.post.CreatedAt.Format "2006-01-02"}}</time>
+            </div>
+            {{if .post.CoverImage}}<img src="{{.post.CoverImage}}" alt="{{.post.Title}}" style="max-width:100%;border-radius:10px;margin:24px 0;">{{end}}
+            <div class="content mt-4">{{md .post.Content}}</div>
+        </article>
+    </div>
+</section>
+{{else if and .column .column.IsPage}}
+<section class="breadcrumbs-custom bg-image context-dark" style="background-image: url(/images/bg-breadcrumbs.jpg);">
+    <div class="container">
+        <h2 class="breadcrumbs-custom-title">{{.column.Name}}</h2>
+    </div>
+</section>
+<section class="section section-lg bg-default">
+    <div class="container">
+        <article class="post-single">
+            <div class="content">{{.page_content}}</div>
+        </article>
+    </div>
+</section>
+{{else if .column}}
+<section class="breadcrumbs-custom bg-image context-dark" style="background-image: url(/images/bg-breadcrumbs.jpg);">
+    <div class="container">
+        <h2 class="breadcrumbs-custom-title">{{.column.Name}}</h2>
+    </div>
+</section>
+<section class="section section-lg bg-default">
+    <div class="container">
+        <div class="row row-30">
+            {{range .posts}}
+            <div class="col-md-6 col-lg-4">
+                <article class="post post-modern post-modern-2 h-100">
+                    {{if .CoverImage}}<img class="post-modern-image" src="{{.CoverImage}}" alt="{{.Title}}">{{else}}<img class="post-modern-image" src="/images/post-7-570x528.jpg" alt="{{.Title}}">{{end}}
+                    <div class="post-modern-content">
+                        <div class="post-modern-center">
+                            {{if .Column}}<div class="post-modern-badge">{{.Column.Name}}</div>{{end}}
+                            <p class="post-modern-title"><a href="/post/{{.Slug}}.html">{{.Title}}</a></p>
+                            <p>{{.Summary}}</p>
+                        </div>
+                        <div class="post-modern-time"><time datetime="{{.CreatedAt.Format "2006-01-02"}}">{{.CreatedAt.Format "2006-01-02"}}</time></div>
+                    </div>
+                    <div class="post-modern-dummy"></div>
+                </article>
+            </div>
+            {{else}}
+            <div class="col-12"><p class="text-center text-muted">暂无内容</p></div>
+            {{end}}
+        </div>
+    </div>
+</section>
+{{else}}
+<section class="section swiper-custom-container swiper-custom-container-2">
+    <div class="swiper-container swiper-slider swiper-slider-5 swiper-slider-6" data-autoplay="5000" data-simulate-touch="false" data-slide-effect="fade">
+        <div class="swiper-wrapper text-lg-start">
+            <div class="swiper-slide context-dark" data-slide-bg="/images/slide-1.jpg">
+                <div class="swiper-slide-caption section-md">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-11 col-xl-10 col-xxl-12">
+                                <div class="oh decor-classic"><span data-caption-animate="slideInLeft" data-caption-delay="0"></span></div>
+                                <h3 class="swiper-title-2 oh"><span class="d-block" data-caption-animate="slideInDown" data-caption-delay="0">{{index .settings "site_title"}}</span><span class="d-block" data-caption-animate="slideInUp" data-caption-delay="0">{{with index .settings "company_short_name"}}{{.}}{{else}}品质服务{{end}}</span></h3>
+                                <h6 class="oh swiper-subtitle-2"><span class="d-inline-block" data-caption-animate="slideInUp" data-caption-delay="300">{{index .settings "site_description"}}</span></h6>
+                                <div class="button-wrap oh"><a class="button button-lg button-primary button-shadow button-winona" href="/column/about.html" data-caption-animate="slideInDown" data-caption-delay="300">了解更多</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="swiper-slide context-dark" data-slide-bg="/images/slide-2.jpg">
+                <div class="swiper-slide-caption section-md">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-11 col-xl-10 col-xxl-12">
+                                <div class="oh decor-classic"><span data-caption-animate="slideInLeft" data-caption-delay="0"></span></div>
+                                <h3 class="swiper-title-2"><span class="d-block" data-caption-animate="fadeInLeft" data-caption-delay="250">产品中心</span><span class="d-block" data-caption-animate="fadeInLeft" data-caption-delay="400">稳定可靠</span></h3>
+                                <h6 class="swiper-subtitle-2" data-caption-animate="fadeInUp" data-caption-delay="0">为客户提供高质量产品与服务</h6><a class="button button-lg button-primary button-shadow button-winona" href="/column/products.html" data-caption-animate="fadeInUp" data-caption-delay="250">查看产品</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="swiper-slide context-dark" data-slide-bg="/images/slide-3.jpg">
+                <div class="swiper-slide-caption section-md">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-11 col-xl-10 col-xxl-12">
+                                <div class="oh decor-classic"><span data-caption-animate="slideInLeft" data-caption-delay="0"></span></div>
+                                <h3 class="swiper-title-2 oh d-inline-block"><span class="d-block" data-caption-animate="slideInRight" data-caption-delay="0">新闻资讯</span><span class="d-block" data-caption-animate="slideInLeft" data-caption-delay="0">了解最新动态</span></h3>
+                                <div class="button-wrap"><a class="button button-lg button-primary button-shadow button-winona" href="/column/news.html" data-caption-animate="fadeInUp" data-caption-delay="200">查看资讯</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="swiper-pagination swiper-pagination-2"></div>
+    <div class="swiper-custom-bg bg-gray-25"></div>
+</section>
+
+<section class="section section-inset-4 section-fluid bg-default text-md-start">
+    <div class="container">
+        <div class="title-panel">
+            <div class="group-xl group-middle justify-content-sm-between">
+                <div class="title-panel-left"><h5 class="oh-desktop title-panel-title"><span class="d-inline-block wow slideInDown">栏目导航</span></h5></div>
+                <div class="owl-custom-nav-2 wow fadeInRight" id="owl-custom-nav-1"></div>
+            </div>
+            <div class="title-panel-decor wow slideInLeft"></div>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <div class="owl-carousel" data-autoplay="true" data-items="1" data-sm-items="2" data-lg-items="3" data-xl-items="4" data-margin="30" data-mouse-drag="false" data-navigation-class="#owl-custom-nav-1">
+            {{$images := list "/images/services-7-420x320.jpg" "/images/services-8-420x320.jpg" "/images/services-9-420x320.jpg" "/images/services-10-420x320.jpg" "/images/services-11-420x320.jpg"}}
+            {{range $i, $col := .columns}}
+            <article class="services-rose wow fadeInUp">
+                <div class="services-rose-caption"><img src="{{index $images (mod $i (len $images))}}" alt="{{$col.Name}}" width="420" height="320">
+                    <p class="services-rose-title"><a href="/column/{{$col.Slug}}.html">{{$col.Name}}</a></p>
+                </div>
+            </article>
+            {{end}}
+        </div>
+    </div>
+</section>
+
+<section class="section section-md section-inset-2 bg-gray-25 context-dark text-start section-relative">
+    <div class="container">
+        <div class="row row-60 justify-content-center justify-content-xxl-between flex-lg-row-reverse">
+            <div class="col-md-9 col-lg-6 position-static index-1">
+                <div class="bg-image-right-lg bg-image-right-2"><img src="/images/video-1-1110x830.jpg" alt="{{index .settings "site_title"}}" width="1110" height="830">
+                    <div class="box-transform" style="background-image: url(/images/video-1-1110x830.jpg);"></div>
+                </div>
+            </div>
+            <div class="col-lg-6 position-static">
+                <div class="inset-right-lg-15 inset-right-xl-70">
+                    <h6 class="subtitle-creative d-inline-block"><span class="d-inline-block wow slideInDown">Why choose us</span><span class="title-creative-decor wow slideInLeft"></span></h6>
+                    <h3 class="title-creative oh-desktop"><span class="d-inline-block wow slideInUp">{{with index .settings "company_name"}}{{.}}{{else}}{{index .settings "site_title"}}{{end}}</span></h3>
+                    <p>{{index .settings "site_description"}}</p>
+                    <div class="button-wrap"><a class="button button-lg button-primary button-shadow button-winona" href="/column/about.html">了解我们</a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-lg bg-default">
+    <div class="container tabs-custom tabs-custom-1" id="tabs-11">
+        <div class="title-panel">
+            <div class="group-xl group-middle justify-content-md-between">
+                <div class="title-panel-left"><h5 class="oh-desktop title-panel-title"><span class="d-inline-block wow slideInDown">最新文章</span></h5></div>
+            </div>
+            <div class="title-panel-decor wow slideInLeft"></div>
+        </div>
+        <div class="row row-30">
+            {{range .posts}}
+            <div class="col-md-6 col-lg-4">
+                <article class="post post-modern post-modern-2 h-100 wow slideInUp">
+                    {{if .CoverImage}}<img class="post-modern-image" src="{{.CoverImage}}" alt="{{.Title}}">{{else}}<img class="post-modern-image" src="/images/post-7-570x528.jpg" alt="{{.Title}}">{{end}}
+                    <div class="post-modern-content">
+                        <div class="post-modern-center">
+                            {{if .Column}}<div class="post-modern-badge">{{.Column.Name}}</div>{{end}}
+                            <p class="post-modern-title"><a href="/post/{{.Slug}}.html">{{.Title}}</a></p>
+                            <p>{{.Summary}}</p>
+                        </div>
+                        <div class="post-modern-time"><time datetime="{{.CreatedAt.Format "2006-01-02"}}">{{.CreatedAt.Format "2006-01-02"}}</time></div>
+                    </div>
+                    <div class="post-modern-dummy"></div>
+                </article>
+            </div>
+            {{else}}
+            <div class="col-12"><p class="text-center text-muted">暂无文章</p></div>
+            {{end}}
+        </div>
+    </div>
+</section>
+
+<section class="section section-lg section-inset-1 bg-gray-100">
+    <div class="container">
+        <div class="title-panel">
+            <div class="group-xl group-middle justify-content-sm-between">
+                <div class="title-panel-left"><h5 class="oh-desktop title-panel-title"><span class="d-inline-block wow slideInDown">项目展示</span></h5></div>
+            </div>
+            <div class="title-panel-decor wow slideInLeft"></div>
+        </div>
+        <div class="row row-30">
+            {{range .posts}}
+            <div class="col-sm-6 col-lg-4">
+                <article class="thumbnail thumbnail-mary thumbnail-1 wow slideInUp">
+                    <a class="thumbnail-mary-figure" href="/post/{{.Slug}}.html">
+                        {{if .CoverImage}}<img src="{{.CoverImage}}" alt="{{.Title}}" width="270" height="220">{{else}}<img src="/images/project-9-270x220.jpg" alt="{{.Title}}" width="270" height="220">{{end}}
+                    </a>
+                    <div class="thumbnail-mary-caption">
+                        <h6 class="thumbnail-mary-title"><a href="/post/{{.Slug}}.html">{{.Title}}</a></h6>
+                        <p>{{.Summary}}</p>
+                    </div>
+                </article>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</section>
+
+<section class="section section-lg bg-default">
+    <div class="container">
+        <div class="title-panel">
+            <div class="group-xl group-middle justify-content-sm-between">
+                <div class="title-panel-left"><h5 class="oh-desktop title-panel-title"><span class="d-inline-block wow slideInDown">合作伙伴</span></h5></div>
+            </div>
+            <div class="title-panel-decor wow slideInLeft"></div>
+        </div>
+        <div class="owl-carousel owl-style-9 owl-style-10" data-items="1" data-sm-items="2" data-md-items="3" data-lg-items="4" data-margin="30" data-autoplay="true" data-nav="true">
+            <a class="clients-jean" href="#"><img src="/images/clients-2-200x90.png" alt="" width="200" height="90"></a>
+            <a class="clients-jean" href="#"><img src="/images/clients-4-200x90.png" alt="" width="200" height="90"></a>
+            <a class="clients-jean" href="#"><img src="/images/clients-6-200x90.png" alt="" width="200" height="90"></a>
+            <a class="clients-jean" href="#"><img src="/images/clients-22-200x90.png" alt="" width="200" height="90"></a>
+            <a class="clients-jean" href="#"><img src="/images/clients-3-200x90.png" alt="" width="200" height="90"></a>
+            <a class="clients-jean" href="#"><img src="/images/clients-23-200x90.png" alt="" width="200" height="90"></a>
+        </div>
+    </div>
+</section>
+
+<section class="section section-lg bg-gray-25 context-dark">
+    <div class="container">
+        <div class="row row-50 align-items-center">
+            <div class="col-lg-7">
+                <h3 class="wow slideInUp">{{index .settings "company_name"}}</h3>
+                <p class="wow fadeInRight">{{index .settings "site_description"}}</p>
+            </div>
+            <div class="col-lg-5 text-lg-end">
+                <a class="button button-lg button-primary button-shadow button-winona" href="/column/contact.html">立即联系</a>
+            </div>
+        </div>
+    </div>
+</section>
+{{end}}
+{{end}}
+
+{{template "front/layout" .}}

@@ -1,0 +1,152 @@
+{{template "header.html" dict "title" "栏目管理" "nickname" .nickname}}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">栏目管理</h2>
+    <a href="/adm1n/columns/edit/new" class="btn btn-deepgreen">新建栏目</a>
+</div>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h5 class="card-title mb-1">拖动排序</h5>
+                <div class="text-muted small">仅支持顶级栏目拖动，松手后自动保存。</div>
+            </div>
+            <span class="badge bg-light text-dark">可拖动</span>
+        </div>
+        {{if .columns}}
+        <div id="column-sort-list" class="column-sort-list">
+            {{range .columns}}
+            <div class="column-sort-item" draggable="true" data-id="{{.ID}}">
+                <span class="column-sort-handle">⋮⋮</span>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold text-truncate">{{.Name}}</div>
+                    <div class="text-muted small">ID {{.ID}} · {{if .IsPage}}单页{{else}}列表{{end}} · 子栏目 {{len .Children}}</div>
+                </div>
+                <span class="badge bg-secondary">排序 {{.SortOrder}}</span>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <div class="text-center text-muted py-4">暂无栏目</div>
+        {{end}}
+    </div>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover bg-white shadow-sm">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>名称</th>
+                <th>Slug</th>
+                <th>类型</th>
+                <th>父栏目</th>
+                <th>排序</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .columns}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.Name}}</td>
+                <td>{{.Slug}}</td>
+                <td>{{if .IsPage}}<span class="badge bg-info text-dark">单页</span>{{else}}<span class="badge bg-secondary">列表</span>{{end}}</td>
+                <td>{{if .Parent}}{{.Parent.Name}}{{else}}顶级栏目{{end}}</td>
+                <td>{{.SortOrder}}</td>
+                <td>
+                    <a href="/adm1n/columns/edit/{{.ID}}" class="btn btn-sm btn-outline-deepgreen">编辑</a>
+                    <a href="/adm1n/columns/delete/{{.ID}}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确认删除？')">删除</a>
+                </td>
+            </tr>
+            {{if .Children}}
+            {{range .Children}}
+            <tr class="table-light">
+                <td>{{.ID}}</td>
+                <td><span class="ms-3">├ {{.Name}}</span></td>
+                <td>{{.Slug}}</td>
+                <td>{{if .IsPage}}<span class="badge bg-info text-dark">单页</span>{{else}}<span class="badge bg-secondary">列表</span>{{end}}</td>
+                <td>{{if .Parent}}{{.Parent.Name}}{{else}}顶级栏目{{end}}</td>
+                <td>{{.SortOrder}}</td>
+                <td>
+                    <a href="/adm1n/columns/edit/{{.ID}}" class="btn btn-sm btn-outline-deepgreen">编辑</a>
+                    <a href="/adm1n/columns/delete/{{.ID}}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确认删除？')">删除</a>
+                </td>
+            </tr>
+            {{end}}
+            {{end}}
+            {{else}}
+            <tr><td colspan="7" class="text-center text-muted py-4">暂无栏目</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+<script>
+(() => {
+    const list = document.getElementById('column-sort-list');
+    if (!list) return;
+
+    let draggingItem = null;
+
+    const getIds = () => Array.from(list.querySelectorAll('.column-sort-item')).map((item) => Number(item.dataset.id));
+
+    const saveOrder = async () => {
+        const response = await fetch('/adm1n/columns/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: getIds() }),
+        });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert(data.error || '保存排序失败');
+            window.location.reload();
+        }
+    };
+
+    list.addEventListener('dragstart', (event) => {
+        const item = event.target.closest('.column-sort-item');
+        if (!item) return;
+        draggingItem = item;
+        item.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+    });
+
+    list.addEventListener('dragend', () => {
+        if (draggingItem) {
+            draggingItem.classList.remove('dragging');
+            draggingItem = null;
+        }
+    });
+
+    list.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        const afterElement = Array.from(list.querySelectorAll('.column-sort-item:not(.dragging)')).reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = event.clientY - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset, element: child };
+            }
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+
+        if (!draggingItem) return;
+        if (!afterElement) {
+            list.appendChild(draggingItem);
+        } else {
+            list.insertBefore(draggingItem, afterElement);
+        }
+    });
+
+    list.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        if (!draggingItem) return;
+        draggingItem.classList.remove('dragging');
+        draggingItem = null;
+        try {
+            await saveOrder();
+        } catch (error) {
+            alert('保存排序失败');
+            window.location.reload();
+        }
+    });
+})();
+</script>
+{{template "footer.html"}}

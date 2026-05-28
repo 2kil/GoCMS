@@ -1,0 +1,44 @@
+{{template "header.html" dict "title" "文章管理" "nickname" .nickname}}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title mb-0">文章管理</h2>
+    <a href="/adm1n/posts/edit/new" class="btn btn-deepgreen">新建文章</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover bg-white shadow-sm">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>标题</th>
+                <th>栏目</th>
+                <th>作者</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .posts}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.Title}}</td>
+                <td>{{if .Column}}{{.Column.Name}}{{else}}-{{end}}</td>
+                <td>{{if .User}}{{.User.Nickname}}{{else}}-{{end}}</td>
+                <td>{{if .Published}}<span class="badge bg-success">已发布</span>{{else if .ScheduledAt}}<span class="badge bg-info text-dark">定时发布</span><div class="small text-muted">{{.ScheduledAt.Format "2006-01-02 15:04"}}</div>{{else}}<span class="badge bg-secondary">草稿</span>{{end}}</td>
+                <td>{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+                <td>
+                    <a href="/adm1n/posts/edit/{{.ID}}" class="btn btn-sm btn-outline-deepgreen">编辑</a>
+                    {{if .Published}}
+                    <a href="/adm1n/posts/toggle/{{.ID}}" class="btn btn-sm btn-outline-warning">隐藏</a>
+                    {{else}}
+                    <a href="/adm1n/posts/toggle/{{.ID}}" class="btn btn-sm btn-outline-success">发布</a>
+                    {{end}}
+                    <a href="/adm1n/posts/delete/{{.ID}}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确认删除？')">删除</a>
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="7" class="text-center text-muted py-4">暂无文章</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{template "footer.html"}}

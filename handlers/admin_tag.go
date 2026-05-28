@@ -1,0 +1,93 @@
+package handlers
+
+import (
+	"net/http"
+	"regexp"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"shuaitesteel.com/cms/database"
+	"shuaitesteel.com/cms/models"
+)
+
+var customTagKeyPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
+
+func ListTags(c *gin.Context) {
+	var tags []models.CustomTag
+	database.DB.Order("id desc").Find(&tags)
+
+	c.HTML(http.StatusOK, "tags.html", gin.H{
+		"tags":     tags,
+		"nickname": c.MustGet("nickname"),
+	})
+}
+
+func ShowTagEdit(c *gin.Context) {
+	idStr := c.Param("id")
+	var tag models.CustomTag
+
+	if idStr != "" && idStr != "new" {
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil || database.DB.First(&tag, id).Error != nil {
+			c.Redirect(http.StatusFound, "/adm1n/tags")
+			return
+		}
+	}
+
+	c.HTML(http.StatusOK, "tag_edit.html", gin.H{
+		"tag":      tag,
+		"nickname": c.MustGet("nickname"),
+	})
+}
+
+func SaveTag(c *gin.Context) {
+	idStr := c.Param("id")
+	var tag models.CustomTag
+
+	if idStr != "" && idStr != "new" {
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil || database.DB.First(&tag, id).Error != nil {
+			c.Redirect(http.StatusFound, "/adm1n/tags")
+			return
+		}
+	}
+
+	tag.Name = c.PostForm("name")
+	tag.Key = c.PostForm("key")
+	tag.Value = c.PostForm("value")
+
+	if tag.Name == "" || !customTagKeyPattern.MatchString(tag.Key) {
+		c.Redirect(http.StatusFound, "/adm1n/tags/edit/"+idStr)
+		return
+	}
+
+	if tag.ID != 0 {
+		database.DB.Save(&tag)
+	} else {
+		database.DB.Create(&tag)
+	}
+
+	InvalidateCache()
+	GenerateStatic()
+	c.Redirect(http.StatusFound, "/adm1n/tags")
+}
+
+func DeleteTag(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/adm1n/tags")
+		return
+	}
+
+	var tag models.CustomTag
+	if database.DB.First(&tag, id).Error != nil {
+		c.Redirect(http.StatusFound, "/adm1n/tags")
+		return
+	}
+
+	database.DB.Delete(&tag)
+	InvalidateCache()
+	GenerateStatic()
+	c.Redirect(http.StatusFound, "/adm1n/tags")
+}

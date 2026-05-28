@@ -1,0 +1,38 @@
+{{template "header.html" dict "title" "自定义标签" "nickname" .nickname}}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="page-title mb-1">自定义标签</h2>
+        <div class="text-muted">创建可在前台模板调用的自定义变量</div>
+    </div>
+    <a href="/adm1n/tags/edit/new" class="btn btn-deepgreen">新建标签</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover bg-white shadow-sm">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>标签名称</th>
+                <th>标签变量</th>
+                <th>标签内容</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .tags}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.Name}}</td>
+                <td><code>{{`{{index .custom_tags "`}}{{.Key}}{{`"}}`}}</code></td>
+                <td class="text-truncate" style="max-width: 420px;">{{.Value}}</td>
+                <td>
+                    <a href="/adm1n/tags/edit/{{.ID}}" class="btn btn-sm btn-outline-deepgreen">编辑</a>
+                    <a href="/adm1n/tags/delete/{{.ID}}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确认删除？')">删除</a>
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="5" class="text-center text-muted py-4">暂无自定义标签</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{template "footer.html"}}

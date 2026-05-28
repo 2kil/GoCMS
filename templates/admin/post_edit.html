@@ -1,0 +1,80 @@
+{{template "header.html" dict "title" "编辑文章" "nickname" .nickname}}
+<h2 class="page-title mb-4">{{if .post.ID}}编辑文章{{else}}新建文章{{end}}</h2>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="post" action="/adm1n/posts/save/{{if .post.ID}}{{.post.ID}}{{else}}new{{end}}">
+            <div class="mb-3">
+                <label class="form-label">标题</label>
+                <input type="text" name="title" class="form-control" value="{{.post.Title}}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Slug</label>
+                <input type="text" name="slug" class="form-control" value="{{.post.Slug}}" placeholder="留空则自动生成">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">所属栏目</label>
+                <select name="column_id" class="form-select">
+                    <option value="">无栏目</option>
+                    {{range .columns}}
+                    <option value="{{.ID}}" {{if eq $.column_id .ID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">封面图</label>
+                <input type="text" name="cover_image" class="form-control" value="{{.post.CoverImage}}" placeholder="图片URL">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">摘要</label>
+                <textarea name="summary" class="form-control" rows="3">{{.post.Summary}}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">内容 (Markdown)</label>
+                <textarea name="content" id="editor" class="form-control" rows="15">{{.post.Content}}</textarea>
+            </div>
+            <div class="row g-3 align-items-start mb-3">
+                <div class="col-md-3">
+                    <div class="form-check publish-option">
+                        <input type="checkbox" name="published" class="form-check-input" id="published" {{if .post.Published}}checked{{end}}>
+                        <label class="form-check-label" for="published">发布</label>
+                    </div>
+                    <div class="form-text">勾选后立即发布。</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check publish-option">
+                        <input type="checkbox" name="scheduled" class="form-check-input" id="scheduled" {{if .post.ScheduledAt}}checked{{end}}>
+                        <label class="form-check-label" for="scheduled">定时发布</label>
+                    </div>
+                    <div class="form-text">仅在未勾选发布时生效。</div>
+                </div>
+                <div class="col-md-6 schedule-time-field" id="scheduled_at_group">
+                    <label class="form-label">发布时间</label>
+                    <input type="datetime-local" name="scheduled_at" class="form-control" value="{{if .post.ScheduledAt}}{{.post.ScheduledAt.Format "2006-01-02T15:04"}}{{end}}">
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-deepgreen">保存</button>
+                <a href="/adm1n/posts" class="btn btn-outline-deepgreen">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/easymde@2/dist/easymde.min.js"></script>
+<script>
+new EasyMDE({element:document.getElementById('editor'),spellChecker:false,status:false,minHeight:'300px'});
+const publishedInput=document.getElementById('published');
+const scheduledInput=document.getElementById('scheduled');
+const scheduledAtGroup=document.getElementById('scheduled_at_group');
+function syncScheduleFields(){
+    if(publishedInput.checked){
+        scheduledInput.checked=false;
+        scheduledAtGroup.classList.add('d-none');
+        return;
+    }
+    scheduledAtGroup.classList.toggle('d-none',!scheduledInput.checked);
+}
+publishedInput.addEventListener('change',syncScheduleFields);
+scheduledInput.addEventListener('change',syncScheduleFields);
+syncScheduleFields();
+</script>
+{{template "footer.html"}}

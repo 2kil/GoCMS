@@ -1,0 +1,26 @@
+{{template "header.html" dict "title" "编辑标签" "nickname" .nickname}}
+<h2 class="page-title mb-4">{{if .tag.ID}}编辑标签{{else}}新建标签{{end}}</h2>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="post" action="/adm1n/tags/save/{{if .tag.ID}}{{.tag.ID}}{{else}}new{{end}}">
+            <div class="mb-3">
+                <label class="form-label">标签名称</label>
+                <input type="text" name="name" class="form-control" value="{{.tag.Name}}" placeholder="例如：客服电话" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">标签变量</label>
+                <input type="text" name="key" class="form-control" value="{{.tag.Key}}" placeholder="例如：service_phone" required>
+                <div class="form-text">只能使用字母、数字、下划线，且必须以字母开头。前台模板调用方式：<code>{{`{{index .custom_tags "service_phone"}}`}}</code></div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">标签内容</label>
+                <textarea name="value" class="form-control" rows="6" placeholder="标签实际内容">{{.tag.Value}}</textarea>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-deepgreen">保存</button>
+                <a href="/adm1n/tags" class="btn btn-outline-deepgreen">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{{template "footer.html"}}
