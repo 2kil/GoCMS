@@ -14,6 +14,8 @@
 - 前台访问未命中后台路由时，由 `ServePublic` 从 `public/` 读取静态文件。
 - 前台模板自带 CSS、JS、图片等资源放在对应模板目录下，静态生成时会复制到 `public/`。
 - 后台样式资源放在 `templates/admin/css/`，通过 `/admin-assets/css/...` 访问。
+- 编译后的二进制支持 CLI；不带参数的 `cms` 必须继续等同于 `cms serve`，用于兼容现有生产启动方式。
+- 本项目已经用于生产环境，后续代码和数据库变更必须优先考虑向前兼容和自动升级。
 
 ## 常用命令
 
@@ -21,6 +23,20 @@
 
 ```bash
 go run .
+```
+
+显式启动 Web 服务：
+
+```bash
+go run . serve
+```
+
+CLI 帮助：
+
+```bash
+go run . help
+go run . user help
+go run . db schema
 ```
 
 编译和基础检查：
@@ -76,6 +92,7 @@ admin / admin123
 关键目录：
 
 - `main.go`：应用入口、路由注册、模板函数注册。
+- `cli.go`：CLI 子命令实现，覆盖后台常用维护操作和数据库维护操作。
 - `config/`：配置加载和模板路径解析。
 - `database/`：数据库初始化、默认数据写入。
 - `models/`：数据库模型。
@@ -131,6 +148,82 @@ admin / admin123
 - `public/column/`
 
 如果直接修改数据库，不会自动触发运行中的程序重新生成静态页。直接改库后建议重启程序，或在后台保存一次网站设置/文章/栏目/自定义标签触发重建。
+
+CLI 写内容类命令会调用缓存失效和静态生成，适合生产运维和后续 AI 自动化开发使用。
+
+## CLI 维护命令
+
+编译后的二进制支持后台和数据库维护 CLI。查看帮助：
+
+```bash
+cms help
+cms user help
+cms post help
+cms column help
+cms tag help
+cms setting help
+cms db help
+```
+
+常用命令：
+
+```bash
+cms serve
+cms static
+cms migrate
+cms db schema
+cms db repair
+cms db repair --generate-static
+```
+
+后台用户：
+
+```bash
+cms user list
+cms user create --username editor --password secret --nickname 编辑 --admin
+cms user password --username admin --password new-secret
+cms user delete --id 2
+cms reset-admin admin new-secret
+```
+
+文章：
+
+```bash
+cms post list
+cms post get --slug cms-launch
+cms post save --title 标题 --slug article-slug --summary 摘要 --content 正文 --column-id 1 --published true
+cms post publish --slug article-slug
+cms post unpublish --id 1
+cms post delete --slug article-slug
+```
+
+栏目：
+
+```bash
+cms column list
+cms column get --slug news
+cms column save --name 新闻 --slug news --sort 1
+cms column save --id 2 --name 子栏目 --slug child --parent-id 1
+cms column delete --slug news
+```
+
+自定义标签和设置：
+
+```bash
+cms tag list
+cms tag set --key service_phone --name 客服电话 --value 400-000-0000
+cms setting list
+cms setting get --key site_title
+cms setting set --key site_title --value 网站标题
+```
+
+CLI 注意事项：
+
+- `help`、`version` 和 `<command> help` 不应初始化数据库或写日志。
+- CLI 会读取同一份 `config.ini`，生产执行前必须确认工作目录和数据库路径正确。
+- `reset-admin` 和 `user password` 只修改已有用户密码，不创建新用户。
+- 写内容类命令应在成功后触发 `InvalidateCache()` 和 `GenerateStatic()`。
+- 新增 CLI 命令时保持参数风格为 `cms <resource> <action> --key value`，方便脚本和 AI 调用。
 
 ## 模板文件
 
@@ -588,6 +681,8 @@ templates/admin/css/admin.css
 
 ## 直接操作数据库
 
+生产环境优先使用后台或 CLI 维护数据，不推荐直接操作 SQLite。只有紧急排查或一次性人工修复时才考虑手工 SQL。
+
 数据库文件：
 
 ```text
@@ -686,6 +781,23 @@ WHERE key = 'company_phone';
 - 直接改库不会自动刷新运行中的缓存。
 - 直接改库不会自动重新生成 `public/` 下静态 HTML。
 - 直接改库后建议重启程序，或在后台保存一次相关配置触发 `GenerateStatic()`。
+- 如果必须直接改库，改完后优先执行 `cms static` 或重启服务。
+
+## 生产兼容和数据库升级规则
+
+本项目已经用于生产环境。后续维护时必须遵守：
+
+- 不带参数的 `cms` 必须继续启动 Web 服务，不能改变生产启动方式。
+- 后台 `/adm1n/...` 路由、前台 `/post/slug.html` 和 `/column/slug.html` URL 规则不应随意改变。
+- 数据库结构修改必须写进 Go 代码，通过 `database.Init()`、`AutoMigrate` 或显式迁移函数自动完成。
+- 不能只给手工 SQL 作为数据库升级方案；编译后的二进制必须能兼容或升级已有生产 `cms.db`。
+- 迁移逻辑必须幂等，重复启动或重复执行不应破坏数据。
+- 新增字段优先允许空值或提供安全默认值，兼容历史数据。
+- 不随意删除字段、重命名字段、改变字段含义、改变唯一约束或破坏旧模板变量。
+- 需要修复旧数据时，优先新增 Go 迁移或 `cms db repair` 子命令。
+- 升级前后建议执行 `cms db schema` 记录并核对数据库结构。
+- 修改 session、登录、密码、安全策略时要评估生产影响，避免无提示让所有管理员登录态失效。
+- 修改静态生成逻辑时要避免误删生产手工资源；`public/` 是生成目录，不要存放需要长期保留的人工文件。
 
 ## 开发注意事项
 

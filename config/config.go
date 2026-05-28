@@ -51,11 +51,14 @@ func Init() {
 	}
 
 	cfgPath := "config.ini"
+	loadedConfigFile := true
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 		exe, _ := os.Executable()
 		cfgPath = filepath.Join(filepath.Dir(exe), "config.ini")
 		if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 			log.Println("config.ini 不存在，使用默认配置")
+			loadedConfigFile = false
+			ensureSessionSecret(!loadedConfigFile)
 			return
 		}
 	}
@@ -63,6 +66,7 @@ func Init() {
 	iniFile, err := ini.Load(cfgPath)
 	if err != nil {
 		log.Printf("加载配置文件失败: %v，使用默认配置", err)
+		ensureSessionSecret(true)
 		return
 	}
 
@@ -99,7 +103,15 @@ func Init() {
 		}
 	}
 
+	ensureSessionSecret(!loadedConfigFile)
+}
+
+func ensureSessionSecret(allowRandom bool) {
 	if Cfg.Session.Secret == "cms-secret-key-2026" {
+		if !allowRandom {
+			log.Println("警告: 当前 config.ini 使用默认会话密钥。生产环境建议修改 [session] secret。")
+			return
+		}
 		b := make([]byte, 32)
 		if _, err := rand.Read(b); err == nil {
 			Cfg.Session.Secret = hex.EncodeToString(b)
