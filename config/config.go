@@ -40,6 +40,7 @@ type LogConfig struct {
 }
 
 var Cfg *Config
+var baseDir string
 
 func Init() {
 	Cfg = &Config{
@@ -49,6 +50,7 @@ func Init() {
 		Log:      LogConfig{File: "cms.log"},
 		Static:   StaticConfig{Enable: false, Dir: "public"},
 	}
+	baseDir = "."
 
 	cfgPath := "config.ini"
 	loadedConfigFile := true
@@ -58,14 +60,17 @@ func Init() {
 		if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 			log.Println("config.ini 不存在，使用默认配置")
 			loadedConfigFile = false
+			resolveConfiguredPaths()
 			ensureSessionSecret(!loadedConfigFile)
 			return
 		}
 	}
+	baseDir = filepath.Dir(cfgPath)
 
 	iniFile, err := ini.Load(cfgPath)
 	if err != nil {
 		log.Printf("加载配置文件失败: %v，使用默认配置", err)
+		resolveConfiguredPaths()
 		ensureSessionSecret(true)
 		return
 	}
@@ -103,7 +108,34 @@ func Init() {
 		}
 	}
 
+	resolveConfiguredPaths()
 	ensureSessionSecret(!loadedConfigFile)
+}
+
+func resolveConfiguredPaths() {
+	Cfg.Database.Path = ResolvePath(Cfg.Database.Path)
+	Cfg.Log.File = ResolvePath(Cfg.Log.File)
+	Cfg.Static.Dir = ResolvePath(Cfg.Static.Dir)
+}
+
+func BaseDir() string {
+	if baseDir != "" {
+		return baseDir
+	}
+	if _, err := os.Stat("config.ini"); err == nil {
+		return "."
+	}
+	if exe, err := os.Executable(); err == nil {
+		return filepath.Dir(exe)
+	}
+	return "."
+}
+
+func ResolvePath(path string) string {
+	if path == "" || filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(BaseDir(), path)
 }
 
 func ensureSessionSecret(allowRandom bool) {
@@ -121,8 +153,10 @@ func ensureSessionSecret(allowRandom bool) {
 }
 
 func TemplateDir() string {
-	if _, err := os.Stat("templates"); err == nil {
-		return "templates"
+	if path := ResolvePath("templates"); path != "" {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
 	}
 
 	if exe, err := os.Executable(); err == nil {

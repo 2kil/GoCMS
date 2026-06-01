@@ -12,6 +12,8 @@ import (
 
 var DB *gorm.DB
 
+const defaultAdminPassword = "G0u8NmtXSsFmDwxDCl"
+
 func Init(dbPath string) {
 	var err error
 	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
@@ -34,7 +36,7 @@ func seedAdmin() {
 		return
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(defaultAdminPassword), bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatalf("加密密码失败: %v", err)
 	}
@@ -46,7 +48,7 @@ func seedAdmin() {
 		IsAdmin:  true,
 	}
 	DB.Create(&admin)
-	log.Println("默认管理员已创建: admin / admin123")
+	log.Printf("默认管理员已创建: admin / %s", defaultAdminPassword)
 }
 
 func seedSettings() {

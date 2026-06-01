@@ -46,7 +46,7 @@ http://localhost:8080/adm1n/login
 默认后台账号：
 
 ```text
-admin / admin123
+admin / G0u8NmtXSsFmDwxDCl
 ```
 
 第一次启动会自动创建 SQLite 数据库、迁移数据表、创建默认管理员和默认网站设置。

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -92,8 +93,8 @@ func runServer() {
 
 	r.LoadHTMLGlob(config.AdminTemplateGlob())
 
-	r.Static("/static", "./static")
-	r.Static("/admin-assets/css", "./templates/admin/css")
+	r.Static("/static", config.ResolvePath("static"))
+	r.Static("/admin-assets/css", filepath.Join(config.TemplateDir(), "admin", "css"))
 
 	store := cookie.NewStore([]byte(config.Cfg.Session.Secret))
 	r.Use(sessions.Sessions("cms_session", store))
@@ -145,7 +146,7 @@ func runServer() {
 
 	log.Printf("服务器启动: http://localhost:%s", port)
 	log.Printf("管理后台: http://localhost:%s/adm1n/login", port)
-	log.Printf("默认账号: admin / admin123")
+	log.Printf("默认账号: admin / G0u8NmtXSsFmDwxDCl")
 	r.Run(":" + port)
 }
 

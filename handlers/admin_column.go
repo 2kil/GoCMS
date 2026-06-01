@@ -109,12 +109,22 @@ func ShowColumnEdit(c *gin.Context) {
 		parentID = *column.ParentID
 	}
 
+	settings := frontCache.getSettings()
+	content := column.Content
+	if column.PageTemplate != "" {
+		if templateContent, ok := readFrontTemplatePageFile(settings, column.PageTemplate); ok {
+			content = templateContent
+		}
+	}
+
 	c.HTML(http.StatusOK, "column_edit.html", gin.H{
 		"column":           column,
+		"content":          content,
 		"all_columns":      flatColumns,
 		"parent_id":        parentID,
-		"page_templates":   frontTemplatePageFiles(frontCache.getSettings()),
-		"current_template": selectedFrontTemplate(frontCache.getSettings()),
+		"page_templates":   frontTemplatePageFiles(settings),
+		"page_contents":    frontTemplatePageFileContents(settings),
+		"current_template": selectedFrontTemplate(settings),
 		"nickname":         c.MustGet("nickname"),
 		"error":            c.Query("error"),
 	})
@@ -151,12 +161,15 @@ func renderColumnEditWithError(c *gin.Context, column models.Column, message str
 	if column.ParentID != nil {
 		parentID = *column.ParentID
 	}
+	settings := frontCache.getSettings()
 	c.HTML(http.StatusOK, "column_edit.html", gin.H{
 		"column":           column,
+		"content":          column.Content,
 		"all_columns":      flatColumns,
 		"parent_id":        parentID,
-		"page_templates":   frontTemplatePageFiles(frontCache.getSettings()),
-		"current_template": selectedFrontTemplate(frontCache.getSettings()),
+		"page_templates":   frontTemplatePageFiles(settings),
+		"page_contents":    frontTemplatePageFileContents(settings),
+		"current_template": selectedFrontTemplate(settings),
 		"nickname":         c.MustGet("nickname"),
 		"error":            message,
 	})
@@ -208,16 +221,28 @@ func SaveColumn(c *gin.Context) {
 	}
 	column.Slug = slug
 	column.IsPage = isPage
+	column.Content = content
 	if isPage {
 		if pageTemplate != "" {
+			if !isEditablePageTemplate(pageTemplate) {
+				renderColumnEditWithError(c, column, "单页模板文件无效")
+				return
+			}
+			if err := writeFrontTemplatePageFile(frontCache.getSettings(), pageTemplate, content); err != nil {
+				log.Printf("保存单页模板文件失败: %v", err)
+				renderColumnEditWithError(c, column, "保存单页模板文件失败: "+err.Error())
+				return
+			}
 			column.PageTemplate = pageTemplate
+			column.Content = ""
 		} else {
 			column.PageTemplate = ""
+			column.Content = content
 		}
 	} else {
 		column.PageTemplate = ""
+		column.Content = content
 	}
-	column.Content = content
 	sortOrder, _ := strconv.Atoi(sortOrderStr)
 	if sortOrder == 0 && column.ID == 0 {
 		var maxSort int

@@ -21,7 +21,7 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">单页模板文件</label>
-                <select name="page_template" class="form-select">
+                <select name="page_template" class="form-select" id="page_template">
                     <option value="">使用下方自定义内容</option>
                     {{range .page_templates}}
                     <option value="{{.}}" {{if eq $.column.PageTemplate .}}selected{{end}}>{{.}}</option>
@@ -31,8 +31,14 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">单页内容 (HTML / 模板代码)</label>
-                <textarea name="content" class="form-control" rows="10" placeholder="可以编写 HTML，也可以使用下方提示中的模板变量">{{.column.Content}}</textarea>
-                <div class="form-text">该内容会作为可信 HTML 输出，仅建议管理员编辑。可用变量：<code>{{`{{index .settings "company_phone"}}`}}</code>、<code>{{`{{index .custom_tags "service_phone"}}`}}</code>、<code>{{`{{asset "images/logo.png"}}`}}</code></div>
+                <div class="code-editor" id="content_editor">
+                    <div class="code-editor-lines" id="content_lines" aria-hidden="true">1</div>
+                    <div class="code-editor-main">
+                        <pre class="code-editor-highlight" id="content_highlight" aria-hidden="true"></pre>
+                        <textarea name="content" id="content" class="code-editor-input" rows="16" spellcheck="false" placeholder="可以编写 HTML，也可以使用下方提示中的模板变量">{{.content}}</textarea>
+                    </div>
+                </div>
+                <div class="form-text">选择单页模板文件时，这里编辑的是模板文件内容，保存后会写回对应 HTML 文件；不选择模板时，这里编辑栏目自身内容。可用变量：<code>{{`{{index .settings "company_phone"}}`}}</code>、<code>{{`{{index .custom_tags "service_phone"}}`}}</code>、<code>{{`{{asset "images/logo.png"}}`}}</code></div>
             </div>
             <div class="mb-3">
                 <label class="form-label">父栏目</label>
@@ -54,4 +60,99 @@
         </form>
     </div>
 </div>
+{{range $name, $content := .page_contents}}
+<textarea class="d-none" data-page-template-content="{{$name}}">{{$content}}</textarea>
+{{end}}
+<script>
+(function () {
+    const templateSelect = document.getElementById('page_template');
+    const contentInput = document.getElementById('content');
+    const lineBox = document.getElementById('content_lines');
+    const highlightBox = document.getElementById('content_highlight');
+    if (!templateSelect || !contentInput || !lineBox || !highlightBox) {
+        return;
+    }
+
+    const templateContents = {};
+    document.querySelectorAll('[data-page-template-content]').forEach(function (item) {
+        templateContents[item.dataset.pageTemplateContent] = item.value;
+    });
+    const customContent = {{printf "%q" .column.Content}};
+
+    function escapeHtml(value) {
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function highlightCode(value) {
+        let html = '';
+        let lastIndex = 0;
+        let depth = 0;
+        const tokenPattern = /(\{\{[\s\S]*?\}\}|<[^>]*>)/g;
+        let match;
+        while ((match = tokenPattern.exec(value)) !== null) {
+            html += escapeHtml(value.slice(lastIndex, match.index));
+            const token = match[0];
+            if (token.charCodeAt(0) === 123 && token.charCodeAt(1) === 123) {
+                html += '<span class="code-token-template">' + escapeHtml(token) + '</span>';
+            } else {
+                const isClose = /^<\s*\//.test(token);
+                const isSelfClosing = /\/\s*>$/.test(token) || /^<\s*!/.test(token);
+                if (isClose && depth > 0) {
+                    depth--;
+                }
+                const tagDepth = depth % 12;
+                const escapedTag = escapeHtml(token).replace(/([\w:-]+)(=)(&quot;.*?&quot;|&#39;.*?&#39;)/g, '<span class="code-token-attr">$1</span>$2<span class="code-token-string">$3</span>');
+                html += '<span class="code-token-tag code-token-tag-depth-' + tagDepth + '">' + escapedTag + '</span>';
+                if (!isClose && !isSelfClosing) {
+                    depth++;
+                }
+            }
+            lastIndex = tokenPattern.lastIndex;
+        }
+        html += escapeHtml(value.slice(lastIndex));
+        return html || ' ';
+    }
+
+    function refreshEditor() {
+        const value = contentInput.value;
+        const count = Math.max(1, value.split('\n').length);
+        let lines = '';
+        for (let i = 1; i <= count; i++) {
+            lines += i + '<br>';
+        }
+        lineBox.innerHTML = lines;
+        highlightBox.innerHTML = highlightCode(value);
+        lineBox.scrollTop = contentInput.scrollTop;
+        highlightBox.scrollTop = contentInput.scrollTop;
+        highlightBox.scrollLeft = contentInput.scrollLeft;
+    }
+
+    function setContent(value) {
+        contentInput.value = value;
+        refreshEditor();
+    }
+
+    templateSelect.addEventListener('change', function () {
+        const fileName = templateSelect.value;
+        if (fileName && Object.prototype.hasOwnProperty.call(templateContents, fileName)) {
+            setContent(templateContents[fileName]);
+            return;
+        }
+        setContent(customContent);
+    });
+
+    contentInput.addEventListener('input', refreshEditor);
+    contentInput.addEventListener('scroll', function () {
+        lineBox.scrollTop = contentInput.scrollTop;
+        highlightBox.scrollTop = contentInput.scrollTop;
+        highlightBox.scrollLeft = contentInput.scrollLeft;
+    });
+    refreshEditor();
+})();
+</script>
 {{template "footer.html"}}

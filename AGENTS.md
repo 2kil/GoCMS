@@ -84,7 +84,7 @@ http://localhost:8080/adm1n/login
 默认账号：
 
 ```text
-admin / admin123
+admin / G0u8NmtXSsFmDwxDCl
 ```
 
 ## 目录说明

@@ -90,8 +90,55 @@ func frontTemplatePageFiles(settings map[string]string) []string {
 	return files
 }
 
-func renderFrontTemplateFile(settings map[string]string, fileName string, data interface{}) template.HTML {
+func isEditablePageTemplate(fileName string) bool {
 	if fileName == "" || filepath.Base(fileName) != fileName || filepath.Ext(fileName) != ".html" {
+		return false
+	}
+	return fileName != "index.html" && fileName != "layout.html"
+}
+
+func frontTemplatePageFilePath(settings map[string]string, fileName string) (string, bool) {
+	if !isEditablePageTemplate(fileName) {
+		return "", false
+	}
+	return filepath.Join(config.TemplateDir(), selectedFrontTemplate(settings), fileName), true
+}
+
+func readFrontTemplatePageFile(settings map[string]string, fileName string) (string, bool) {
+	fullPath, ok := frontTemplatePageFilePath(settings, fileName)
+	if !ok {
+		return "", false
+	}
+	content, err := os.ReadFile(fullPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Printf("读取单页模板文件失败 %s: %v", fileName, err)
+		}
+		return "", false
+	}
+	return string(content), true
+}
+
+func writeFrontTemplatePageFile(settings map[string]string, fileName string, content string) error {
+	fullPath, ok := frontTemplatePageFilePath(settings, fileName)
+	if !ok {
+		return os.ErrInvalid
+	}
+	return os.WriteFile(fullPath, []byte(content), 0644)
+}
+
+func frontTemplatePageFileContents(settings map[string]string) map[string]string {
+	contents := make(map[string]string)
+	for _, fileName := range frontTemplatePageFiles(settings) {
+		if content, ok := readFrontTemplatePageFile(settings, fileName); ok {
+			contents[fileName] = content
+		}
+	}
+	return contents
+}
+
+func renderFrontTemplateFile(settings map[string]string, fileName string, data interface{}) template.HTML {
+	if !isEditablePageTemplate(fileName) {
 		return ""
 	}
 	fullPath := filepath.Join(config.TemplateDir(), selectedFrontTemplate(settings), fileName)
