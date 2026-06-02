@@ -169,6 +169,7 @@ cms db help
 
 ```bash
 cms serve
+cms refresh
 cms static
 cms migrate
 cms db schema
@@ -221,6 +222,7 @@ CLI 注意事项：
 
 - `help`、`version` 和 `<command> help` 不应初始化数据库或写日志。
 - CLI 会读取同一份 `config.ini`，生产执行前必须确认工作目录和数据库路径正确。
+- `cms refresh` 只发送刷新请求；真正的静态生成由运行中的 `cms serve` 进程完成，用于避免 Windows 下另一个进程直接替换 `public/` 时出现文件占用。
 - `reset-admin` 和 `user password` 只修改已有用户密码，不创建新用户。
 - 写内容类命令应在成功后触发 `InvalidateCache()` 和 `GenerateStatic()`。
 - 新增 CLI 命令时保持参数风格为 `cms <resource> <action> --key value`，方便脚本和 AI 调用。

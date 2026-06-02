@@ -9,6 +9,7 @@ cms
 cms serve
 cms help
 cms version
+cms refresh
 cms static
 cms generate-static
 cms migrate
@@ -17,6 +18,7 @@ cms migrate
 说明：
 
 - `cms` / `cms serve`：启动 Web 服务。
+- `cms refresh`：向正在运行的 `cms serve` 发送刷新请求，由服务进程热更新 `public/` 静态文件。
 - `cms static` / `cms generate-static`：重新生成前台静态页面。
 - `cms migrate`：初始化数据库并执行自动迁移和默认数据补齐。
 - `cms help`：显示帮助。

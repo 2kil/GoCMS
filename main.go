@@ -38,6 +38,10 @@ func main() {
 	}
 
 	config.Init()
+	if cmd == "refresh" {
+		requestRefresh()
+		return
+	}
 	setupLog()
 	database.Init(config.Cfg.Database.Path)
 
@@ -86,6 +90,7 @@ func setupLog() {
 func runServer() {
 	handlers.GenerateStatic()
 	handlers.StartPostScheduler()
+	startRefreshWatcher()
 
 	r := gin.Default()
 
@@ -158,6 +163,7 @@ func printUsage() {
 
 命令:
   serve                         启动 Web 服务（默认）
+  refresh                       请求运行中的服务热更新 public 静态文件
   static                        重新生成前台静态页面
   generate-static               同 static
   migrate                       初始化并迁移数据库

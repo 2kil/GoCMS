@@ -187,6 +187,53 @@ func GenerateStatic() {
 	log.Printf("静态页面已全量生成到 %s/", dir)
 }
 
+func RefreshStatic() {
+	if !config.Cfg.Static.Enable {
+		return
+	}
+
+	staticGenMu.Lock()
+	defer staticGenMu.Unlock()
+
+	settings := frontCache.getSettings()
+	tpl := frontTemplates(settings)
+	if tpl == nil {
+		return
+	}
+
+	os.MkdirAll(filepath.Join(staticDir(), "post"), 0755)
+	os.MkdirAll(filepath.Join(staticDir(), "column"), 0755)
+	copyFrontTemplateAssets(selectedFrontTemplate(settings))
+
+	customTags := frontCache.getCustomTags()
+	columns := frontCache.getColumns()
+
+	var posts []models.Post
+	database.DB.Where("published = ?", true).Preload("Column").Preload("User").Order("id desc").Find(&posts)
+
+	writeStaticFile(tpl, "index.html", map[string]interface{}{
+		"posts":       posts,
+		"columns":     columns,
+		"settings":    settings,
+		"custom_tags": customTags,
+	})
+
+	for _, p := range posts {
+		writeStaticFile(tpl, filepath.Join("post", p.Slug+".html"), map[string]interface{}{
+			"post":        p,
+			"columns":     columns,
+			"settings":    settings,
+			"custom_tags": customTags,
+		})
+	}
+
+	for _, col := range frontCache.getColumnsAll() {
+		genColumnStatic(tpl, col, columns, settings)
+	}
+
+	log.Printf("静态页面已热更新到 %s/", config.Cfg.Static.Dir)
+}
+
 func RemoveStaticPost(slug string) {
 	p := filepath.Join(staticDir(), "post", slug+".html")
 	os.Remove(p)

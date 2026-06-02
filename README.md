@@ -60,6 +60,10 @@ cms serve
 ```
 
 ```bash
+cms refresh
+```
+
+```bash
 cms static
 ```
 
@@ -130,6 +134,7 @@ cms help
 说明：
 
 - `serve`：启动 Web 服务，是默认命令。
+- `refresh`：向正在运行的 `cms serve` 发送刷新请求，由服务进程热更新 `public/` 静态文件，避免 Windows 下另一个进程替换目录导致文件占用。
 - `static` / `generate-static`：初始化配置和数据库后重新生成前台静态页面。
 - `migrate`：初始化配置和数据库，执行 GORM 自动迁移和内置默认数据补齐。
 - `reset-admin`：重置已有后台用户密码，不会创建新用户。
