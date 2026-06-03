@@ -11,7 +11,7 @@ function Copy-RuntimeFiles {
     Copy-Item -LiteralPath (Join-Path -Path $PSScriptRoot -ChildPath "templates") -Destination $OutputDir -Recurse
     Copy-Item -LiteralPath (Join-Path -Path $PSScriptRoot -ChildPath "static") -Destination $OutputDir -Recurse
     Copy-Item -LiteralPath (Join-Path -Path $PSScriptRoot -ChildPath "config.ini") -Destination $OutputDir
-    Copy-Item -LiteralPath (Join-Path -Path $PSScriptRoot -ChildPath "CLI_USAGE.md") -Destination $OutputDir
+    Copy-Item -LiteralPath (Join-Path -Path $PSScriptRoot -ChildPath "to_dist.md") -Destination (Join-Path -Path $OutputDir -ChildPath "README.md")
 }
 
 function Build-Target {
@@ -26,7 +26,7 @@ function Build-Target {
     $env:CGO_ENABLED = "0"
     $env:GOOS = $Goos
     $env:GOARCH = $Goarch
-    go build -o (Join-Path -Path $TargetDir -ChildPath $BinaryName) -ldflags="-s -w -X main.version=$(Get-Date -Format 'yyyyMMddHHmmss')"
+    go build -o (Join-Path -Path $TargetDir -ChildPath $BinaryName) -ldflags="-s -w -X main.version=$(Get-Date -Format 'yy.MMdd.HHmm')"
 }
 
 if (Test-Path -LiteralPath $OutputDir) {

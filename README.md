@@ -51,71 +51,124 @@ admin / G0u8NmtXSsFmDwxDCl
 
 第一次启动会自动创建 SQLite 数据库、迁移数据表、创建默认管理员和默认网站设置。
 
-## CLI 命令
+## CLI 使用说明
 
-编译后的二进制支持 CLI。为兼容已有生产启动方式，不带命令仍会启动 Web 服务。
+编译后的二进制支持 CLI。为兼容已有生产启动方式，不带参数时等同于启动 Web 服务。
+
+### 基础命令
 
 ```bash
+cms
 cms serve
-```
-
-```bash
+cms help
+cms version
 cms refresh
-```
-
-```bash
 cms static
-```
-
-```bash
 cms generate-static
-```
-
-```bash
 cms migrate
 ```
 
-```bash
-cms reset-admin <username> <password>
-```
+说明：
+
+- `cms` / `cms serve`：启动 Web 服务。
+- `cms refresh`：向正在运行的 `cms serve` 发送刷新请求，由服务进程热更新 `public/` 静态文件，避免 Windows 下另一个进程替换目录导致文件占用。
+- `cms static` / `cms generate-static`：重新生成前台静态页面。
+- `cms migrate`：初始化数据库并执行自动迁移和默认数据补齐。
+- `cms help`：显示帮助。
+- `cms version`：显示版本号。
+
+### 用户维护
 
 ```bash
+cms user help
 cms user list
 cms user create --username editor --password secret --nickname 编辑 --admin
 cms user password --username admin --password new-secret
 cms user delete --id 2
+cms reset-admin admin new-secret
 ```
 
+说明：
+
+- `reset-admin` 和 `user password` 只修改已有用户密码，不创建新用户。
+- `--admin` 是布尔参数，传入即表示管理员。
+
+### 文章维护
+
 ```bash
+cms post help
 cms post list
 cms post get --slug cms-launch
+cms post get --id 1
 cms post save --title 标题 --slug article-slug --summary 摘要 --content 正文 --column-id 1 --published true
+cms post save --id 1 --title 新标题 --slug article-slug --content 新正文
 cms post publish --slug article-slug
 cms post unpublish --id 1
 cms post delete --slug article-slug
 ```
 
+常用参数：
+
+- `--id`：文章 ID。
+- `--slug`：文章 URL 标识。
+- `--title`：标题。
+- `--summary`：摘要。
+- `--content`：正文。
+- `--cover`：封面图地址。
+- `--column-id`：栏目 ID。
+- `--no-column`：清空栏目。
+- `--published true|false`：发布状态。
+- `--scheduled-at "2026-05-24 10:30"`：定时发布时间。
+
+### 栏目维护
+
 ```bash
+cms column help
 cms column list
 cms column get --slug news
+cms column get --id 1
 cms column save --name 新闻 --slug news --sort 1
 cms column save --id 2 --name 子栏目 --slug child --parent-id 1
+cms column save --id 2 --name 顶级栏目 --slug top --no-parent
 cms column delete --slug news
 ```
 
+常用参数：
+
+- `--id`：栏目 ID。
+- `--slug`：栏目 URL 标识。
+- `--name`：栏目名称。
+- `--parent-id`：父栏目 ID。
+- `--no-parent`：设为顶级栏目。
+- `--sort`：排序值。
+- `--is-page true|false`：是否单页栏目。
+- `--page-template`：单页模板文件。
+- `--content`：单页内容。
+
+栏目保存会校验父栏目不能选择自身或自己的子栏目。
+
+### 自定义标签
+
 ```bash
+cms tag help
 cms tag list
 cms tag set --key service_phone --name 客服电话 --value 400-000-0000
 cms tag delete --key service_phone
 ```
 
+### 网站设置
+
 ```bash
+cms setting help
 cms setting list
 cms setting get --key site_title
 cms setting set --key site_title --value 网站标题
 ```
 
+### 数据库维护
+
 ```bash
+cms db help
 cms db init
 cms db migrate
 cms db schema
@@ -123,32 +176,20 @@ cms db repair
 cms db repair --generate-static
 ```
 
-```bash
-cms version
-```
-
-```bash
-cms help
-```
-
 说明：
 
-- `serve`：启动 Web 服务，是默认命令。
-- `refresh`：向正在运行的 `cms serve` 发送刷新请求，由服务进程热更新 `public/` 静态文件，避免 Windows 下另一个进程替换目录导致文件占用。
-- `static` / `generate-static`：初始化配置和数据库后重新生成前台静态页面。
-- `migrate`：初始化配置和数据库，执行 GORM 自动迁移和内置默认数据补齐。
-- `reset-admin`：重置已有后台用户密码，不会创建新用户。
-- `user`：维护后台用户，支持列表、创建、改密码、删除。
-- `post`：维护文章，支持列表、查看、保存、删除、发布、取消发布。
-- `column`：维护栏目，支持列表、查看、保存、删除，并校验父栏目不能指向自身或子栏目。
-- `tag`：维护自定义标签，支持列表、设置、删除。
-- `setting`：维护网站设置，支持列表、查看、设置。
-- `db init` / `db migrate`：初始化配置和数据库，执行自动迁移和默认数据补齐。
-- `db schema`：输出当前 SQLite 数据库表结构，便于升级前后核对。
-- `db repair`：执行内置安全修复，例如补齐空 slug、空标题、空昵称和栏目排序；加 `--generate-static` 会修复后重新生成静态页。
-- `version`：输出编译版本，默认是 `dev`。
-- CLI 命令会读取同一份 `config.ini`，并使用配置中的数据库路径、静态目录和模板目录。
-- 数据库结构升级必须随 Go 代码发布；生产环境不要依赖手工 SQL 作为唯一升级方式。
+- `db init` / `db migrate`：初始化数据库并执行自动迁移。
+- `db schema`：输出当前 SQLite 数据库结构。
+- `db repair`：执行内置安全修复，例如补齐空 slug、空标题、空昵称、栏目排序和自定义标签名称。
+- `db repair --generate-static`：修复后重新生成静态页面。
+
+### CLI 生产注意事项
+
+- CLI 会读取同一份 `config.ini`，执行前确认工作目录和数据库路径正确。
+- 写内容类命令成功后会触发缓存失效和静态生成。
+- `help`、`version` 和 `<command> help` 不会初始化数据库或写日志。
+- 数据库结构升级必须随 Go 代码发布，不要只依赖手工 SQL。
+- 直接修改 SQLite 后，需要重启服务或执行 `cms static`。
 
 ## 常用命令
 
@@ -364,16 +405,295 @@ company_website
 
 ## 前台模板
 
-前台模板目录位于 `templates/` 下，且必须同时包含：
+前台模板目录位于 `templates/` 下，且必须同时包含 `layout.html` 和 `index.html`。
+
+`templates/admin/` 是后台模板目录，不会作为前台模板。默认前台模板是 `templates/index/`。后台“网站设置”中的前台模板下拉框来自所有有效前台模板目录。
+
+### 从 demo 改造 HTML 模板
+
+不要直接把 `demo/` 目录作为前台模板使用。推荐新建一个模板目录，例如：
 
 ```text
-layout.html
-index.html
+templates/模板名/
+templates/模板名/layout.html
+templates/模板名/index.html
+templates/模板名/css/
+templates/模板名/js/
+templates/模板名/images/
+templates/模板名/fonts/
 ```
 
-`templates/admin/` 是后台模板目录，不会作为前台模板。
+模板目录名不要使用 `admin`。
 
-默认前台模板是 `templates/index/`。后台“网站设置”中的前台模板下拉框来自所有有效前台模板目录。
+### 1. 新建模板目录
+
+在 `templates/` 下新建目录，例如：
+
+```text
+templates/company/
+```
+
+最终目录至少应包含：
+
+```text
+templates/company/layout.html
+templates/company/index.html
+```
+
+### 2. 复制静态资源
+
+把 `demo/` 里的资源目录复制到新的模板目录中：
+
+```text
+demo/css      -> templates/company/css
+demo/js       -> templates/company/js
+demo/images   -> templates/company/images
+demo/fonts    -> templates/company/fonts
+```
+
+如果模板包还有 `assets/`、`vendor/` 等资源目录，也可以复制到模板目录下。
+
+### 3. 拆分 HTML
+
+把 demo 首页拆成两个文件：
+
+- `layout.html`：放公共 HTML 结构，例如 `<!DOCTYPE html>`、`<head>`、导航、页脚、公共 CSS 和 JS。
+- `index.html`：放首页、栏目页、文章页的主要内容入口。
+
+`layout.html` 示例：
+
+```html
+{{define "front/layout"}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "front_title" .}}{{index .settings "site_title"}}{{end}}</title>
+    <meta name="keywords" content="{{index .settings "site_keywords"}}">
+    <meta name="description" content="{{index .settings "site_description"}}">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <a href="/">{{index .settings "site_title"}}</a>
+        <nav>
+            <a href="/">首页</a>
+            {{range .columns}}
+                <a href="/column/{{.Slug}}.html">{{.Name}}</a>
+            {{end}}
+        </nav>
+    </header>
+
+    {{block "front_content" .}}{{end}}
+
+    <footer>
+        {{index .settings "site_footer"}}
+    </footer>
+    <script src="/js/script.js"></script>
+</body>
+</html>
+{{end}}
+```
+
+`index.html` 示例：
+
+```html
+{{template "front/layout" .}}
+
+{{define "front_content"}}
+    {{if .post}}
+        <article>
+            <h1>{{.post.Title}}</h1>
+            <div>{{md .post.Content}}</div>
+        </article>
+    {{else if .column}}
+        {{if .column.IsPage}}
+            {{.page_content}}
+        {{else}}
+            <section>
+                <h1>{{.column.Name}}</h1>
+                {{range .posts}}
+                    <article>
+                        <h2><a href="/post/{{.Slug}}.html">{{.Title}}</a></h2>
+                        <p>{{.Summary}}</p>
+                    </article>
+                {{end}}
+            </section>
+        {{end}}
+    {{else}}
+        <section>
+            <h1>{{index .settings "site_title"}}</h1>
+            {{range .posts}}
+                <article>
+                    <h2><a href="/post/{{.Slug}}.html">{{.Title}}</a></h2>
+                    <p>{{.Summary}}</p>
+                </article>
+            {{end}}
+        </section>
+    {{end}}
+{{end}}
+```
+
+### 4. 替换写死导航
+
+把 demo 中写死的菜单改成 CMS 栏目循环。
+
+原始静态链接通常类似：
+
+```html
+<a href="about-us.html">关于我们</a>
+<a href="services.html">服务项目</a>
+<a href="contacts.html">联系我们</a>
+```
+
+应改成：
+
+```html
+<a href="/">首页</a>
+{{range .columns}}
+    <a href="/column/{{.Slug}}.html">{{.Name}}</a>
+{{end}}
+```
+
+如果某个链接需要固定指向某个栏目，可以使用该栏目的 slug：
+
+```html
+<a href="/column/contact.html">联系我们</a>
+```
+
+### 5. 替换文章和新闻列表
+
+把 demo 中写死的新闻、博客、产品或案例列表改成 `.posts` 循环。
+
+```html
+{{range .posts}}
+<article>
+    <h2><a href="/post/{{.Slug}}.html">{{.Title}}</a></h2>
+    <p>{{.Summary}}</p>
+</article>
+{{end}}
+```
+
+文章详情页通过 `.post` 判断：
+
+```html
+{{if .post}}
+<article>
+    <h1>{{.post.Title}}</h1>
+    <div>{{md .post.Content}}</div>
+</article>
+{{end}}
+```
+
+### 6. 替换网站信息变量
+
+把 demo 中写死的网站名称、电话、邮箱、地址等替换为 `.settings` 或 `.custom_tags`。
+
+常用网站设置变量：
+
+```html
+{{index .settings "site_title"}}
+{{index .settings "site_keywords"}}
+{{index .settings "site_description"}}
+{{index .settings "site_footer"}}
+{{index .settings "company_name"}}
+{{index .settings "company_short_name"}}
+{{index .settings "company_contact"}}
+{{index .settings "company_phone"}}
+{{index .settings "company_email"}}
+{{index .settings "company_address"}}
+{{index .settings "company_website"}}
+```
+
+自定义标签示例：
+
+```html
+{{index .custom_tags "service_phone"}}
+```
+
+### 7. 修正资源路径
+
+前台模板资源必须使用绝对路径。
+
+正确：
+
+```html
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/script.js"></script>
+<img src="/images/logo.png" alt="Logo">
+```
+
+错误：
+
+```html
+<link rel="stylesheet" href="css/style.css">
+<script src="js/script.js"></script>
+<img src="images/logo.png" alt="Logo">
+```
+
+原因：文章页 URL 是 `/post/xxx.html`，相对路径 `css/style.css` 会被浏览器解析成 `/post/css/style.css`，容易导致资源 404。
+
+### 8. 清理 demo 演示链接
+
+不要保留原始静态页面链接，例如：
+
+```text
+about-us.html
+services.html
+single-service.html
+projects.html
+contacts.html
+blog-post.html
+```
+
+应替换为 CMS 路径：
+
+```html
+<a href="/column/{{.Slug}}.html">{{.Name}}</a>
+<a href="/post/{{.Slug}}.html">{{.Title}}</a>
+<a href="/column/contact.html">联系我们</a>
+```
+
+### 9. 制作可选单页模板
+
+如果 demo 中有“关于我们”“联系我们”等内页，可以把它们改造成可选单页模板。
+
+示例：
+
+```text
+templates/company/about.html
+templates/company/contact.html
+```
+
+这类文件应作为片段模板使用，不要再写完整的 `{{template "front/layout" .}}`，也不要包含完整的 `<!DOCTYPE html>`、`<html>`、`<head>`、`<body>`。
+
+单页模板示例：
+
+```html
+<section class="about-page">
+    <h1>关于我们</h1>
+    <p>{{index .settings "company_name"}}</p>
+    <p>电话：{{index .settings "company_phone"}}</p>
+    <p>邮箱：{{index .settings "company_email"}}</p>
+</section>
+```
+
+后台栏目编辑页中勾选“单页栏目”后，可以在“单页模板文件”里选择这些文件。
+
+### 10. 切换前台模板
+
+进入后台“网站设置”，在“前台模板”下拉框中选择新模板目录。
+
+保存后会写入：
+
+```text
+settings.front_template
+```
+
+保存网站设置会触发静态页面重新生成。
+
+### 模板结构参考
 
 推荐结构：
 
@@ -395,6 +715,28 @@ templates/模板名/images/logo.png
 ```
 
 静态生成时会把当前前台模板目录里的非 `.html` 文件复制到 `public/` 对应路径。
+
+### 模板验证
+
+改造完成后建议执行：
+
+```bash
+go test ./...
+go run .
+```
+
+浏览器检查：
+
+```text
+/
+/column/栏目slug.html
+/post/文章slug.html
+/css/style.css
+/js/script.js
+/images/logo.png
+```
+
+如果资源 404，优先检查模板中是否还存在相对路径，资源是否确实放在当前前台模板目录下，后台“网站设置”中是否已经切换到新模板，以及是否已经重新生成 `public/`。
 
 ## 模板变量和函数
 
