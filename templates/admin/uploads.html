@@ -1,0 +1,125 @@
+{{template "header.html" dict "title" "图片管理" "nickname" .nickname}}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h2 class="page-title mb-0">图片管理</h2>
+    <span class="badge text-bg-light upload-count">共 {{.count}} 张图片</span>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {{if .images}}
+        <div class="table-responsive upload-table-wrap">
+            <table class="table upload-table align-middle">
+                <thead>
+                    <tr>
+                        <th>预览</th>
+                        <th>文件名</th>
+                        <th>上传日期</th>
+                        <th>大小</th>
+                        <th>地址</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .images}}
+                    <tr>
+                        <td>
+                            <button type="button" class="upload-list-thumb" data-bs-toggle="modal" data-bs-target="#previewUploadModal" data-url="{{.URL}}" data-name="{{.Name}}">
+                                <img src="{{.URL}}" alt="{{.Name}}">
+                            </button>
+                        </td>
+                        <td>
+                            <div class="fw-bold upload-list-name" title="{{.Name}}">{{.Name}}</div>
+                            <div class="small text-muted">{{.Month}}</div>
+                        </td>
+                        <td>{{.Date}}</td>
+                        <td>{{.Size}}</td>
+                        <td><input type="text" class="form-control form-control-sm upload-url-input" value="{{.URL}}" readonly onclick="this.select()"></td>
+                        <td>
+                            <div class="upload-actions">
+                                <button type="button" class="btn btn-outline-deepgreen btn-sm upload-rename-btn" data-bs-toggle="modal" data-bs-target="#renameUploadModal" data-month="{{.Month}}" data-name="{{.Name}}">重命名</button>
+                                <form method="post" action="/adm1n/uploads/delete" onsubmit="return confirm('确定删除这张图片吗？');">
+                                    <input type="hidden" name="month" value="{{.Month}}">
+                                    <input type="hidden" name="name" value="{{.Name}}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">删除</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        {{else}}
+        <div class="empty-state">暂无上传图片</div>
+        {{end}}
+    </div>
+</div>
+
+<div class="modal fade" id="previewUploadModal" tabindex="-1" aria-labelledby="previewUploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewUploadModalLabel">图片预览</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="previewUploadImage" class="img-fluid rounded" src="" alt="图片预览">
+                <div class="small text-muted mt-3" id="previewUploadUrl"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="renameUploadModal" tabindex="-1" aria-labelledby="renameUploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="/adm1n/uploads/rename">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renameUploadModalLabel">重命名图片</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="month" id="renameUploadMonth">
+                    <input type="hidden" name="name" id="renameUploadName">
+                    <div class="mb-3">
+                        <label class="form-label">当前文件名</label>
+                        <input type="text" class="form-control" id="renameUploadCurrent" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">新文件名</label>
+                        <input type="text" name="new_name" class="form-control" id="renameUploadNewName" required>
+                        <div class="form-text">不填写扩展名时会沿用原扩展名。</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-deepgreen" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-deepgreen">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.upload-rename-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        const month=btn.dataset.month;
+        const name=btn.dataset.name;
+        document.getElementById('renameUploadMonth').value=month;
+        document.getElementById('renameUploadName').value=name;
+        document.getElementById('renameUploadCurrent').value=name;
+        document.getElementById('renameUploadNewName').value=name;
+    });
+});
+document.querySelectorAll('.upload-list-thumb').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        const url=btn.dataset.url;
+        const name=btn.dataset.name;
+        document.getElementById('previewUploadModalLabel').textContent=name;
+        document.getElementById('previewUploadImage').src=url;
+        document.getElementById('previewUploadImage').alt=name;
+        document.getElementById('previewUploadUrl').textContent=url;
+    });
+});
+</script>
+{{template "footer.html"}}

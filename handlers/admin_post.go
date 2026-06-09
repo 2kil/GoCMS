@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"shuaitesteel.com/cms/database"
@@ -13,14 +14,47 @@ import (
 
 func Dashboard(c *gin.Context) {
 	var postCount int64
+	var publishedCount int64
+	var draftCount int64
 	var columnCount int64
+	var tagCount int64
 	database.DB.Model(&models.Post{}).Count(&postCount)
+	database.DB.Model(&models.Post{}).Where("published = ?", true).Count(&publishedCount)
+	database.DB.Model(&models.Post{}).Where("published = ?", false).Count(&draftCount)
 	database.DB.Model(&models.Column{}).Count(&columnCount)
+	database.DB.Model(&models.CustomTag{}).Count(&tagCount)
+
+	lastLoginIP := "暂无记录"
+	lastLoginAt := "暂无记录"
+	session := sessions.Default(c)
+	if v, ok := session.Get("last_login_ip").(string); ok && v != "" {
+		lastLoginIP = v
+	}
+	if v, ok := session.Get("last_login_at").(string); ok && v != "" {
+		lastLoginAt = v
+	}
+	if lastLoginIP == "暂无记录" || lastLoginAt == "暂无记录" {
+		var user models.User
+		if database.DB.First(&user, c.GetUint("user_id")).Error == nil {
+			if lastLoginIP == "暂无记录" && user.LastLoginIP != "" {
+				lastLoginIP = user.LastLoginIP
+			}
+			if lastLoginAt == "暂无记录" && user.LastLoginAt != nil {
+				lastLoginAt = user.LastLoginAt.Format("2006-01-02 15:04:05")
+			}
+		}
+	}
 
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
-		"postCount":   postCount,
-		"columnCount": columnCount,
-		"nickname":    c.MustGet("nickname"),
+		"postCount":      postCount,
+		"publishedCount": publishedCount,
+		"draftCount":     draftCount,
+		"columnCount":    columnCount,
+		"tagCount":       tagCount,
+		"uploadCount":    len(loadUploadedImages()),
+		"lastLoginIP":    lastLoginIP,
+		"lastLoginAt":    lastLoginAt,
+		"nickname":       c.MustGet("nickname"),
 	})
 }
 
@@ -55,10 +89,12 @@ func ShowPostEdit(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "post_edit.html", gin.H{
-		"post":      post,
-		"columns":   columns,
-		"column_id": columnID,
-		"nickname":  c.MustGet("nickname"),
+		"post":           post,
+		"columns":        columns,
+		"uploadedImages": loadUploadedImages(),
+		"column_id":      columnID,
+		"content_format": normalizeContentFormat(post.ContentFormat),
+		"nickname":       c.MustGet("nickname"),
 	})
 }
 
@@ -69,6 +105,7 @@ func SavePost(c *gin.Context) {
 	slug := c.PostForm("slug")
 	summary := c.PostForm("summary")
 	content := c.PostForm("content")
+	contentFormat := normalizeContentFormat(c.PostForm("content_format"))
 	coverImage := c.PostForm("cover_image")
 	published := c.PostForm("published") == "on"
 	scheduled := c.PostForm("scheduled") == "on"
@@ -95,6 +132,7 @@ func SavePost(c *gin.Context) {
 	post.Slug = slug
 	post.Summary = summary
 	post.Content = content
+	post.ContentFormat = contentFormat
 	post.CoverImage = coverImage
 	post.Published = published
 	post.ScheduledAt = nil
@@ -129,11 +167,13 @@ func SavePost(c *gin.Context) {
 			columnID = *post.ColumnID
 		}
 		c.HTML(http.StatusOK, "post_edit.html", gin.H{
-			"error":     "保存失败: " + dbErr.Error(),
-			"post":      post,
-			"columns":   columns,
-			"column_id": columnID,
-			"nickname":  c.MustGet("nickname"),
+			"error":          "保存失败: " + dbErr.Error(),
+			"post":           post,
+			"columns":        columns,
+			"uploadedImages": loadUploadedImages(),
+			"column_id":      columnID,
+			"content_format": normalizeContentFormat(post.ContentFormat),
+			"nickname":       c.MustGet("nickname"),
 		})
 		return
 	}
@@ -141,6 +181,13 @@ func SavePost(c *gin.Context) {
 	InvalidateCache()
 	GenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/posts")
+}
+
+func normalizeContentFormat(format string) string {
+	if format == "html" {
+		return "html"
+	}
+	return "markdown"
 }
 
 func TogglePost(c *gin.Context) {
@@ -160,7 +207,10 @@ func TogglePost(c *gin.Context) {
 		if post.Published {
 			post.ScheduledAt = nil
 		}
-		database.DB.Save(&post)
+		database.DB.Model(&post).Updates(map[string]interface{}{
+			"published":    post.Published,
+			"scheduled_at": post.ScheduledAt,
+		})
 	}
 	InvalidateCache()
 	GenerateStatic()

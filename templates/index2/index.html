@@ -16,7 +16,7 @@
                 <time datetime="{{.post.CreatedAt.Format "2006-01-02"}}">{{.post.CreatedAt.Format "2006-01-02"}}</time>
             </div>
             {{if .post.CoverImage}}<img src="{{.post.CoverImage}}" alt="{{.post.Title}}" style="max-width:100%;border-radius:10px;margin:24px 0;">{{end}}
-            <div class="content mt-4">{{md .post.Content}}</div>
+            <div class="content ql-content mt-4">{{postContent .post}}</div>
         </article>
     </div>
 </section>
@@ -73,7 +73,7 @@
                         <div class="row justify-content-center">
                             <div class="col-lg-11 col-xl-10 col-xxl-12">
                                 <div class="oh decor-classic"><span data-caption-animate="slideInLeft" data-caption-delay="0"></span></div>
-                                <h3 class="swiper-title-2 oh"><span class="d-block" data-caption-animate="slideInDown" data-caption-delay="0">{{index .settings "site_title"}}</span><span class="d-block" data-caption-animate="slideInUp" data-caption-delay="0">{{with index .settings "company_short_name"}}{{.}}{{else}}品质服务{{end}}</span></h3>
+                                <h3 class="swiper-title-2 oh"><span class="d-block" data-caption-animate="slideInDown" data-caption-delay="0">{{index .settings "site_title"}}</span><span class="d-block" data-caption-animate="slideInUp" data-caption-delay="0">{{with index .custom_tags "company_short_name"}}{{.}}{{else}}品质服务{{end}}</span></h3>
                                 <h6 class="oh swiper-subtitle-2"><span class="d-inline-block" data-caption-animate="slideInUp" data-caption-delay="300">{{index .settings "site_description"}}</span></h6>
                                 <div class="button-wrap oh"><a class="button button-lg button-primary button-shadow button-winona" href="/column/about.html" data-caption-animate="slideInDown" data-caption-delay="300">了解更多</a></div>
                             </div>
@@ -148,7 +148,7 @@
             <div class="col-lg-6 position-static">
                 <div class="inset-right-lg-15 inset-right-xl-70">
                     <h6 class="subtitle-creative d-inline-block"><span class="d-inline-block wow slideInDown">Why choose us</span><span class="title-creative-decor wow slideInLeft"></span></h6>
-                    <h3 class="title-creative oh-desktop"><span class="d-inline-block wow slideInUp">{{with index .settings "company_name"}}{{.}}{{else}}{{index .settings "site_title"}}{{end}}</span></h3>
+                    <h3 class="title-creative oh-desktop"><span class="d-inline-block wow slideInUp">{{with index .custom_tags "company_name"}}{{.}}{{else}}{{index .settings "site_title"}}{{end}}</span></h3>
                     <p>{{index .settings "site_description"}}</p>
                     <div class="button-wrap"><a class="button button-lg button-primary button-shadow button-winona" href="/column/about.html">了解我们</a></div>
                 </div>
@@ -237,7 +237,7 @@
     <div class="container">
         <div class="row row-50 align-items-center">
             <div class="col-lg-7">
-                <h3 class="wow slideInUp">{{index .settings "company_name"}}</h3>
+                <h3 class="wow slideInUp">{{index .custom_tags "company_name"}}</h3>
                 <p class="wow fadeInRight">{{index .settings "site_description"}}</p>
             </div>
             <div class="col-lg-5 text-lg-end">

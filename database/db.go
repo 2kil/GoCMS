@@ -27,6 +27,7 @@ func Init(dbPath string) {
 
 	seedAdmin()
 	seedSettings()
+	seedCustomTags()
 }
 
 func seedAdmin() {
@@ -49,6 +50,32 @@ func seedAdmin() {
 	}
 	DB.Create(&admin)
 	log.Printf("默认管理员已创建: admin / %s", defaultAdminPassword)
+}
+
+func seedCustomTags() {
+	contactTags := map[string]string{
+		"company_name":       "公司名称",
+		"company_short_name": "公司简称",
+		"company_contact":    "联系人",
+		"company_phone":      "联系电话",
+		"company_email":      "联系邮箱",
+		"company_address":    "联系地址",
+		"company_website":    "官网地址",
+	}
+	for key, name := range contactTags {
+		var count int64
+		DB.Model(&models.CustomTag{}).Where("key = ?", key).Count(&count)
+		if count > 0 {
+			continue
+		}
+
+		value := ""
+		var setting models.Setting
+		if err := DB.Where("key = ?", key).First(&setting).Error; err == nil {
+			value = setting.Value
+		}
+		DB.Create(&models.CustomTag{Name: name, Key: key, Value: value})
+	}
 }
 
 func seedSettings() {

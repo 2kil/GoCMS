@@ -19,7 +19,7 @@
     <div class="container">
         <div class="tabs-custom row row-50 justify-content-center flex-lg-row-reverse text-center text-md-start" id="tabs-4">
             <div class="col-lg-4 col-xl-3">
-                <h5 class="text-spacing-200">{{with index .settings "company_short_name"}}{{.}}{{else}}企业简介{{end}}</h5>
+                <h5 class="text-spacing-200">{{with index .custom_tags "company_short_name"}}{{.}}{{else}}企业简介{{end}}</h5>
                 <ul class="nav list-category list-category-down-md-inline-block">
                     <li class="list-category-item wow fadeInRight" role="presentation" data-wow-delay="0s"><a class="active" href="#tabs-4-1" data-bs-toggle="tab">公司介绍</a></li>
                     <li class="list-category-item wow fadeInRight" role="presentation" data-wow-delay=".1s"><a href="#tabs-4-2" data-bs-toggle="tab">企业理念</a></li>
@@ -32,7 +32,7 @@
                 <div class="tab-content tab-content-1">
                     <div class="tab-pane fade show active" id="tabs-4-1">
                         <h4>公司简介</h4>
-                        <p>{{with index .settings "company_name"}}{{.}}{{else}}{{index .settings "site_title"}}{{end}} 致力于为客户提供稳定、专业、可持续的内容与服务支持。</p>
+                        <p>{{with index .custom_tags "company_name"}}{{.}}{{else}}{{index .settings "site_title"}}{{end}} 致力于为客户提供稳定、专业、可持续的内容与服务支持。</p>
                         <p>{{index .settings "site_description"}}</p>
                         <img src="/images/about-1-835x418.jpg" alt="公司简介" width="835" height="418">
                     </div>
@@ -48,9 +48,9 @@
                     </div>
                     <div class="tab-pane fade" id="tabs-4-4">
                         <h4>联系方式</h4>
-                        <p>电话：{{index .settings "company_phone"}}</p>
-                        <p>邮箱：{{index .settings "company_email"}}</p>
-                        <p>地址：{{index .settings "company_address"}}</p>
+                        <p>电话：{{index .custom_tags "company_phone"}}</p>
+                        <p>邮箱：{{index .custom_tags "company_email"}}</p>
+                        <p>地址：{{index .custom_tags "company_address"}}</p>
                         <img src="/images/about-4-835x418.jpg" alt="联系方式" width="835" height="418">
                     </div>
                 </div>

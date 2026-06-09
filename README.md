@@ -5,7 +5,7 @@ GoCMS 是一个基于 Go、Gin、GORM 和 SQLite 的轻量 CMS。后台使用 Gi
 ## 功能概览
 
 - 后台登录、退出和 Session 鉴权。
-- 文章管理：创建、编辑、删除、发布/取消发布、封面图、摘要、栏目归属、Markdown 内容。
+- 文章管理：创建、编辑、删除、发布/取消发布、封面图、摘要、栏目归属、Markdown 内容和可视化编辑内容。
 - 文章发布方式：草稿、立即发布、定时发布。
 - 栏目管理：树形父子栏目、排序、列表栏目、单页栏目。
 - 单页栏目支持直接填写 HTML/模板代码，也支持选择当前前台模板目录下的单页模板片段。
@@ -100,7 +100,7 @@ cms post help
 cms post list
 cms post get --slug cms-launch
 cms post get --id 1
-cms post save --title 标题 --slug article-slug --summary 摘要 --content 正文 --column-id 1 --published true
+cms post save --title 标题 --slug article-slug --summary 摘要 --content 正文 --content-format markdown --column-id 1 --published true
 cms post save --id 1 --title 新标题 --slug article-slug --content 新正文
 cms post publish --slug article-slug
 cms post unpublish --id 1
@@ -114,6 +114,7 @@ cms post delete --slug article-slug
 - `--title`：标题。
 - `--summary`：摘要。
 - `--content`：正文。
+- `--content-format markdown|html`：正文格式，默认 `markdown`。
 - `--cover`：封面图地址。
 - `--column-id`：栏目 ID。
 - `--no-column`：清空栏目。
@@ -152,8 +153,20 @@ cms column delete --slug news
 ```bash
 cms tag help
 cms tag list
+cms tag get --key service_phone
 cms tag set --key service_phone --name 客服电话 --value 400-000-0000
 cms tag delete --key service_phone
+```
+
+### 上传图片
+
+管理 `upload/YYYYMM/` 下的封面图库文件。
+
+```bash
+cms upload help
+cms upload list
+cms upload rename --month 202607 --name old.jpg --new-name new.jpg
+cms upload delete --month 202607 --name new.jpg
 ```
 
 ### 网站设置
@@ -369,6 +382,25 @@ site_description
 site_favicon
 site_footer
 front_template
+```
+
+模板中通过 `.settings` 读取：
+
+```html
+{{index .settings "site_title"}}
+```
+
+公司名称、电话、邮箱、地址等联系信息放在“自定义标签”中维护。旧数据库中的 `settings.company_*` 会保留用于兼容历史模板，但后台不再通过“网站设置”编辑这些字段。
+
+后台设置页也提供当前账号密码修改。修改密码时需要验证旧密码。
+
+## 自定义标签
+
+自定义标签适合维护联系信息、客服电话、ICP备案号、统计代码、地图 iframe 等。
+
+系统会自动创建以下联系信息标签：
+
+```text
 company_name
 company_short_name
 company_contact
@@ -377,19 +409,6 @@ company_email
 company_address
 company_website
 ```
-
-模板中通过 `.settings` 读取：
-
-```html
-{{index .settings "site_title"}}
-{{index .settings "company_phone"}}
-```
-
-后台设置页也提供当前账号用户名和密码修改。修改用户名或密码时需要验证旧密码。
-
-## 自定义标签
-
-自定义标签适合维护非固定字段，例如客服电话、ICP备案号、统计代码、地图 iframe 等。
 
 标签变量规则：
 
@@ -401,6 +420,7 @@ company_website
 
 ```html
 {{index .custom_tags "service_phone"}}
+{{index .custom_tags "company_phone"}}
 ```
 
 ## 前台模板
@@ -588,7 +608,7 @@ demo/fonts    -> templates/company/fonts
 
 ### 6. 替换网站信息变量
 
-把 demo 中写死的网站名称、电话、邮箱、地址等替换为 `.settings` 或 `.custom_tags`。
+把 demo 中写死的网站标题替换为 `.settings`，把公司名称、电话、邮箱、地址等联系信息替换为 `.custom_tags`。
 
 常用网站设置变量：
 
@@ -597,18 +617,18 @@ demo/fonts    -> templates/company/fonts
 {{index .settings "site_keywords"}}
 {{index .settings "site_description"}}
 {{index .settings "site_footer"}}
-{{index .settings "company_name"}}
-{{index .settings "company_short_name"}}
-{{index .settings "company_contact"}}
-{{index .settings "company_phone"}}
-{{index .settings "company_email"}}
-{{index .settings "company_address"}}
-{{index .settings "company_website"}}
 ```
 
-自定义标签示例：
+联系信息和自定义标签示例：
 
 ```html
+{{index .custom_tags "company_name"}}
+{{index .custom_tags "company_short_name"}}
+{{index .custom_tags "company_contact"}}
+{{index .custom_tags "company_phone"}}
+{{index .custom_tags "company_email"}}
+{{index .custom_tags "company_address"}}
+{{index .custom_tags "company_website"}}
 {{index .custom_tags "service_phone"}}
 ```
 
@@ -673,9 +693,9 @@ templates/company/contact.html
 ```html
 <section class="about-page">
     <h1>关于我们</h1>
-    <p>{{index .settings "company_name"}}</p>
-    <p>电话：{{index .settings "company_phone"}}</p>
-    <p>邮箱：{{index .settings "company_email"}}</p>
+    <p>{{index .custom_tags "company_name"}}</p>
+    <p>电话：{{index .custom_tags "company_phone"}}</p>
+    <p>邮箱：{{index .custom_tags "company_email"}}</p>
 </section>
 ```
 

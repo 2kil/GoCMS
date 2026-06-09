@@ -9,8 +9,8 @@
         发布于: {{.post.CreatedAt.Format "2006-01-02"}}
     </div>
     {{if .post.CoverImage}}<img src="{{.post.CoverImage}}" alt="{{.post.Title}}" style="max-width:100%;border-radius:8px;margin:20px 0;">{{end}}
-    <div class="content">
-        {{md .post.Content}}
+    <div class="content ql-content">
+        {{postContent .post}}
     </div>
 </article>
 {{else if and .column .column.IsPage}}

@@ -38,7 +38,7 @@
                         <textarea name="content" id="content" class="code-editor-input" rows="16" spellcheck="false" placeholder="可以编写 HTML，也可以使用下方提示中的模板变量">{{.content}}</textarea>
                     </div>
                 </div>
-                <div class="form-text">选择单页模板文件时，这里编辑的是模板文件内容，保存后会写回对应 HTML 文件；不选择模板时，这里编辑栏目自身内容。可用变量：<code>{{`{{index .settings "company_phone"}}`}}</code>、<code>{{`{{index .custom_tags "service_phone"}}`}}</code>、<code>{{`{{asset "images/logo.png"}}`}}</code></div>
+                <div class="form-text">选择单页模板文件时，这里编辑的是模板文件内容，保存后会写回对应 HTML 文件；不选择模板时，这里编辑栏目自身内容。可用变量：<code>{{`{{index .custom_tags "company_phone"}}`}}</code>、<code>{{`{{index .custom_tags "service_phone"}}`}}</code>、<code>{{`{{asset "images/logo.png"}}`}}</code></div>
             </div>
             <div class="mb-3">
                 <label class="form-label">父栏目</label>

@@ -1,0 +1,31 @@
+.ql-content img {
+    max-width: 100%;
+    height: auto;
+}
+
+.ql-content .ql-align-center {
+    text-align: center;
+}
+
+.ql-content .ql-align-right {
+    text-align: right;
+}
+
+.ql-content .ql-align-justify {
+    text-align: justify;
+}
+
+.ql-content .ql-indent-1 { padding-left: 3em; }
+.ql-content .ql-indent-2 { padding-left: 6em; }
+.ql-content .ql-indent-3 { padding-left: 9em; }
+.ql-content .ql-indent-4 { padding-left: 12em; }
+.ql-content .ql-indent-5 { padding-left: 15em; }
+.ql-content .ql-indent-6 { padding-left: 18em; }
+.ql-content .ql-indent-7 { padding-left: 21em; }
+.ql-content .ql-indent-8 { padding-left: 24em; }
+
+.ql-content sub,
+.ql-content sup {
+    font-size: 75%;
+    line-height: 0;
+}

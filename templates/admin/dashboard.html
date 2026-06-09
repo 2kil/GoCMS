@@ -1,22 +1,86 @@
 {{template "header.html" dict "title" "仪表盘" "nickname" .nickname}}
-<div class="mb-4">
-    <h2 class="page-title mb-1">仪表盘</h2>
-    <div class="text-muted">站点内容概览与管理入口</div>
+<div class="dashboard-hero mb-4">
+    <div>
+        <h2 class="page-title mb-1">仪表盘</h2>
+        <div class="text-muted">站点内容概览、登录信息与快捷入口</div>
+    </div>
+    <div class="dashboard-login-card">
+        <div class="dashboard-login-label">上次登录</div>
+        <div class="dashboard-login-main"><i class="bi bi-clock-history"></i>{{.lastLoginAt}}</div>
+        <div class="dashboard-login-sub"><i class="bi bi-router"></i>{{.lastLoginIP}}</div>
+    </div>
 </div>
-<div class="row g-4">
-    <div class="col-md-6">
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-xl-3">
         <div class="card stat-card text-center shadow-sm">
             <div class="card-body py-4">
+                <div class="stat-icon"><i class="bi bi-file-earmark-text"></i></div>
                 <div class="display-4 fw-bold">{{.postCount}}</div>
                 <div class="text-muted fw-semibold">文章总数</div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-6 col-xl-3">
         <div class="card stat-card text-center shadow-sm">
             <div class="card-body py-4">
+                <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+                <div class="display-4 fw-bold">{{.publishedCount}}</div>
+                <div class="text-muted fw-semibold">已发布文章</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card stat-card text-center shadow-sm">
+            <div class="card-body py-4">
+                <div class="stat-icon"><i class="bi bi-diagram-3"></i></div>
                 <div class="display-4 fw-bold">{{.columnCount}}</div>
                 <div class="text-muted fw-semibold">栏目总数</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card stat-card text-center shadow-sm">
+            <div class="card-body py-4">
+                <div class="stat-icon"><i class="bi bi-images"></i></div>
+                <div class="display-4 fw-bold">{{.uploadCount}}</div>
+                <div class="text-muted fw-semibold">上传图片</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h3 class="h5 fw-bold mb-3">内容状态</h3>
+                <div class="dashboard-progress-item">
+                    <div class="d-flex justify-content-between mb-1"><span>已发布文章</span><strong>{{.publishedCount}}</strong></div>
+                    <div class="progress"><div class="progress-bar bg-success" style="width: {{if .postCount}}{{printf "%.0f" (percent .publishedCount .postCount)}}{{else}}0{{end}}%"></div></div>
+                </div>
+                <div class="dashboard-progress-item">
+                    <div class="d-flex justify-content-between mb-1"><span>草稿/定时文章</span><strong>{{.draftCount}}</strong></div>
+                    <div class="progress"><div class="progress-bar bg-warning" style="width: {{if .postCount}}{{printf "%.0f" (percent .draftCount .postCount)}}{{else}}0{{end}}%"></div></div>
+                </div>
+                <div class="dashboard-mini-grid mt-4">
+                    <div><strong>{{.tagCount}}</strong><span>自定义标签</span></div>
+                    <div><strong>{{.columnCount}}</strong><span>栏目</span></div>
+                    <div><strong>{{.uploadCount}}</strong><span>图片</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h3 class="h5 fw-bold mb-3">快捷操作</h3>
+                <div class="dashboard-actions">
+                    <a href="/adm1n/posts/edit/new" class="btn btn-deepgreen"><i class="bi bi-plus-circle me-1"></i>新建文章</a>
+                    <a href="/adm1n/columns" class="btn btn-outline-deepgreen"><i class="bi bi-diagram-3 me-1"></i>管理栏目</a>
+                    <a href="/adm1n/uploads" class="btn btn-outline-deepgreen"><i class="bi bi-images me-1"></i>图片管理</a>
+                    <a href="/adm1n/settings" class="btn btn-outline-deepgreen"><i class="bi bi-gear me-1"></i>网站设置</a>
+                </div>
             </div>
         </div>
     </div>

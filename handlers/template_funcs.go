@@ -8,6 +8,7 @@ import (
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
+	"shuaitesteel.com/cms/models"
 )
 
 func templateFuncs() template.FuncMap {
@@ -34,14 +35,30 @@ func templateFuncs() template.FuncMap {
 			}
 			return a % b
 		},
-		"md": func(s string) template.HTML {
-			p := parser.NewWithExtensions(parser.CommonExtensions)
-			renderer := html.NewRenderer(html.RendererOptions{Flags: html.CommonFlags})
-			output := markdown.ToHTML([]byte(s), p, renderer)
-			return template.HTML(output)
+		"percent": func(part, total int64) float64 {
+			if total == 0 {
+				return 0
+			}
+			return float64(part) / float64(total) * 100
 		},
-		"render": renderTemplateString,
+		"md":          renderMarkdown,
+		"postContent": renderPostContent,
+		"render":      renderTemplateString,
 	}
+}
+
+func renderMarkdown(s string) template.HTML {
+	p := parser.NewWithExtensions(parser.CommonExtensions)
+	renderer := html.NewRenderer(html.RendererOptions{Flags: html.CommonFlags})
+	output := markdown.ToHTML([]byte(s), p, renderer)
+	return template.HTML(output)
+}
+
+func renderPostContent(post models.Post) template.HTML {
+	if post.ContentFormat == "html" {
+		return template.HTML(post.Content)
+	}
+	return renderMarkdown(post.Content)
 }
 
 func TemplateFuncsForGin() template.FuncMap {

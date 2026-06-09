@@ -25,15 +25,70 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">封面图</label>
-                <input type="text" name="cover_image" class="form-control" value="{{.post.CoverImage}}" placeholder="图片URL">
+                <div class="cover-image-field">
+                    <input type="hidden" name="cover_image" id="coverImageInput" value="{{.post.CoverImage}}">
+                    <div class="cover-image-preview" id="coverImagePreview">
+                        {{if .post.CoverImage}}
+                        <img src="{{.post.CoverImage}}" alt="封面图预览">
+                        <button type="button" class="cover-image-clear" id="coverImageClear" title="取消选择封面图">×</button>
+                        {{else}}
+                        <span>暂无图片</span>
+                        {{end}}
+                        <div class="cover-image-actions">
+                            <button type="button" class="btn btn-sm btn-light" data-cover-action="choose">选择图片</button>
+                            <button type="button" class="btn btn-sm btn-deepgreen" data-cover-action="upload">上传图片</button>
+                        </div>
+                    </div>
+                    <input type="file" id="uploadCoverInput" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp">
+                    <div class="form-text" id="uploadCoverStatus">封面图可从服务器已有图片中选择，也可以上传新图片。</div>
+                </div>
             </div>
             <div class="mb-3">
                 <label class="form-label">摘要</label>
                 <textarea name="summary" class="form-control" rows="3">{{.post.Summary}}</textarea>
             </div>
             <div class="mb-3">
-                <label class="form-label">内容 (Markdown)</label>
-                <textarea name="content" id="editor" class="form-control" rows="15">{{.post.Content}}</textarea>
+                <label class="form-label">内容</label>
+                <div class="content-editor-mode mb-3">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="content_format" id="formatMarkdown" value="markdown" {{if ne .content_format "html"}}checked{{end}}>
+                        <label class="form-check-label" for="formatMarkdown">Markdown</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="content_format" id="formatHtml" value="html" {{if eq .content_format "html"}}checked{{end}}>
+                        <label class="form-check-label" for="formatHtml">可视化编辑</label>
+                    </div>
+                </div>
+                <div id="markdownEditorPanel">
+                    <textarea name="content" id="editor" class="form-control" rows="15">{{.post.Content}}</textarea>
+                </div>
+                <div id="richEditorPanel" class="d-none">
+                    <div class="image-size-toolbar d-none" id="imageSizeToolbar">
+                        <span>图片宽度</span>
+                        <button type="button" class="btn btn-sm btn-outline-deepgreen" data-image-width="25%">25%</button>
+                        <button type="button" class="btn btn-sm btn-outline-deepgreen" data-image-width="50%">50%</button>
+                        <button type="button" class="btn btn-sm btn-outline-deepgreen" data-image-width="75%">75%</button>
+                        <button type="button" class="btn btn-sm btn-outline-deepgreen" data-image-width="100%">100%</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-image-width="auto">原始宽度</button>
+                        <div class="input-group input-group-sm image-size-custom">
+                            <input type="number" class="form-control" id="imageWidthInput" min="20" max="2000" placeholder="宽度">
+                            <button type="button" class="btn btn-outline-deepgreen" id="applyImageWidthBtn">px</button>
+                        </div>
+                    </div>
+                    <div id="richEditor" class="rich-editor">{{if eq .content_format "html"}}{{safe .post.Content}}{{else}}{{.post.Content}}{{end}}</div>
+                    <div class="rich-image-drag-overlay d-none" id="richImageDragOverlay" aria-hidden="true">
+                        <span class="rich-image-handle rich-image-handle-corner rich-image-handle-nw" data-image-handle="nw"></span>
+                        <span class="rich-image-handle rich-image-handle-corner rich-image-handle-ne" data-image-handle="ne"></span>
+                        <span class="rich-image-handle rich-image-handle-corner rich-image-handle-se" data-image-handle="se"></span>
+                        <span class="rich-image-handle rich-image-handle-corner rich-image-handle-sw" data-image-handle="sw"></span>
+                        <span class="rich-image-handle rich-image-handle-edge rich-image-handle-n" data-image-handle="n"></span>
+                        <span class="rich-image-handle rich-image-handle-edge rich-image-handle-e" data-image-handle="e"></span>
+                        <span class="rich-image-handle rich-image-handle-edge rich-image-handle-s" data-image-handle="s"></span>
+                        <span class="rich-image-handle rich-image-handle-edge rich-image-handle-w" data-image-handle="w"></span>
+                    </div>
+                </div>
+                <input type="file" id="uploadImageInput" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp">
+                <div class="form-text" id="uploadImageStatus"></div>
             </div>
             <div class="row g-3 align-items-start mb-3">
                 <div class="col-md-3">
@@ -62,9 +117,485 @@
         </form>
     </div>
 </div>
+<div class="modal fade" id="coverPickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">选择封面图</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                {{if .uploadedImages}}
+                <div class="cover-picker-grid">
+                    {{range .uploadedImages}}
+                    <button type="button" class="cover-picker-item" data-cover-url="{{.URL}}" title="{{.Name}}">
+                        <img src="{{.URL}}" alt="{{.Name}}">
+                        <span>{{.Name}}</span>
+                    </button>
+                    {{end}}
+                </div>
+                {{else}}
+                <div class="empty-state">服务器中暂无已上传图片，请先上传图片。</div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/easymde@2/dist/easymde.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
 <script>
-new EasyMDE({element:document.getElementById('editor'),spellChecker:false,status:false,minHeight:'300px'});
+const postForm=document.querySelector('form');
+const markdownPanel=document.getElementById('markdownEditorPanel');
+const richPanel=document.getElementById('richEditorPanel');
+const contentTextarea=document.getElementById('editor');
+const formatMarkdown=document.getElementById('formatMarkdown');
+const formatHtml=document.getElementById('formatHtml');
+const richEditor=document.getElementById('richEditor');
+const coverImageInput=document.getElementById('coverImageInput');
+const coverImagePreview=document.getElementById('coverImagePreview');
+const uploadCoverInput=document.getElementById('uploadCoverInput');
+const uploadCoverStatus=document.getElementById('uploadCoverStatus');
+const coverPickerModalElement=document.getElementById('coverPickerModal');
+const uploadImageInput=document.getElementById('uploadImageInput');
+const uploadImageStatus=document.getElementById('uploadImageStatus');
+const imageSizeToolbar=document.getElementById('imageSizeToolbar');
+const imageWidthInput=document.getElementById('imageWidthInput');
+const applyImageWidthBtn=document.getElementById('applyImageWidthBtn');
+const richImageDragOverlay=document.getElementById('richImageDragOverlay');
+let uploadingImage=false;
+let uploadingCover=false;
+let selectedRichImage=null;
+let imageDragState=null;
+function syncCoverPreview(){
+    const url=coverImageInput.value.trim();
+    const actions='<div class="cover-image-actions"><button type="button" class="btn btn-sm btn-light" data-cover-action="choose">选择图片</button><button type="button" class="btn btn-sm btn-deepgreen" data-cover-action="upload">上传图片</button></div>';
+    if(url){
+        coverImagePreview.textContent='';
+        const img=document.createElement('img');
+        img.src=url;
+        img.alt='封面图预览';
+        coverImagePreview.appendChild(img);
+        const clearBtn=document.createElement('button');
+        clearBtn.type='button';
+        clearBtn.className='cover-image-clear';
+        clearBtn.title='取消选择封面图';
+        clearBtn.textContent='×';
+        clearBtn.addEventListener('click',clearCoverImage);
+        coverImagePreview.appendChild(clearBtn);
+        coverImagePreview.insertAdjacentHTML('beforeend',actions);
+    }else{
+        coverImagePreview.innerHTML='<span>暂无图片</span>'+actions;
+    }
+}
+function clearCoverImage(){
+    coverImageInput.value='';
+    uploadCoverStatus.textContent='已取消选择封面图';
+    syncCoverPreview();
+}
+function getCoverPickerModal(){
+    if(!coverPickerModalElement || !window.bootstrap){return null;}
+    return bootstrap.Modal.getOrCreateInstance(coverPickerModalElement);
+}
+const initialCoverClear=document.getElementById('coverImageClear');
+if(initialCoverClear){
+    initialCoverClear.addEventListener('click',clearCoverImage);
+}
+coverImagePreview.addEventListener('click',event=>{
+    const actionButton=event.target.closest('[data-cover-action]');
+    if(!actionButton){return;}
+    if(actionButton.dataset.coverAction==='choose'){
+        const modal=getCoverPickerModal();
+        if(modal){modal.show();}
+        return;
+    }
+    if(actionButton.dataset.coverAction==='upload'){
+        uploadCoverInput.click();
+    }
+});
+document.querySelectorAll('.cover-picker-item').forEach(item=>{
+    item.addEventListener('click',()=>{
+        coverImageInput.value=item.dataset.coverUrl;
+        syncCoverPreview();
+        uploadCoverStatus.textContent='已选择: '+item.dataset.coverUrl;
+        const modal=getCoverPickerModal();
+        if(modal){modal.hide();}
+    });
+});
+const easyMDE=new EasyMDE({
+    element:document.getElementById('editor'),
+    spellChecker:false,
+    status:false,
+    minHeight:'300px',
+    toolbar:[
+        'bold','italic','heading','|','quote','unordered-list','ordered-list','|','link','image',
+        {
+            name:'upload-image',
+            action:()=>selectUploadTarget('markdown'),
+            className:'fa fa-upload',
+            title:'上传图片'
+        },
+        '|','preview','side-by-side','fullscreen','|','guide'
+    ]
+});
+const easyMDETitleMap={
+    'Bold':'加粗',
+    'Italic':'斜体',
+    'Heading':'标题',
+    'Quote':'引用',
+    'Generic List':'无序列表',
+    'Numbered List':'有序列表',
+    'Create Link':'插入链接',
+    'Insert Image':'插入图片',
+    'Toggle Preview':'预览',
+    'Toggle Side by Side':'分屏预览',
+    'Toggle Fullscreen':'全屏编辑',
+    'Markdown Guide':'Markdown 语法说明'
+};
+document.querySelectorAll('.editor-toolbar button').forEach(button=>{
+    const title=button.getAttribute('title');
+    if(title){
+        const cleanTitle=title.replace(/ \(.+\)$/,'');
+        if(easyMDETitleMap[cleanTitle]){
+            button.setAttribute('title',title.replace(cleanTitle,easyMDETitleMap[cleanTitle]));
+            button.setAttribute('aria-label',easyMDETitleMap[cleanTitle]);
+        }
+    }
+});
+const SizeStyle=Quill.import('attributors/style/size');
+SizeStyle.whitelist=['12px','14px','16px','18px','20px','24px','28px','32px','36px','48px'];
+Quill.register(SizeStyle,true);
+const FontStyle=Quill.import('attributors/style/font');
+FontStyle.whitelist=['Arial','Microsoft YaHei','SimSun','SimHei','Times New Roman','Courier New'];
+Quill.register(FontStyle,true);
+const AlignStyle=Quill.import('attributors/style/align');
+Quill.register(AlignStyle,true);
+const quill=new Quill('#richEditor',{
+    theme:'snow',
+    modules:{
+        toolbar:{
+            container:[
+                [{font:FontStyle.whitelist}],
+                [{size:SizeStyle.whitelist}],
+                [{header:[1,2,3,4,5,6,false]}],
+                ['bold','italic','underline','strike'],
+                [{color:[]},{background:[]}],
+                [{list:'ordered'},{list:'bullet'}],
+                [{align:[]}],
+                [{indent:'-1'},{indent:'+1'}],
+                [{script:'sub'},{script:'super'}],
+                ['blockquote','code-block'],
+                ['link','image'],
+                ['clean']
+            ],
+            handlers:{
+                image:()=>selectUploadTarget('html')
+            }
+        }
+    }
+});
+const quillTitleMap=[
+    ['.ql-font','字体'],
+    ['.ql-size','字号'],
+    ['.ql-header','标题级别'],
+    ['.ql-bold','加粗'],
+    ['.ql-italic','斜体'],
+    ['.ql-underline','下划线'],
+    ['.ql-strike','删除线'],
+    ['.ql-color','文字颜色'],
+    ['.ql-background','背景颜色'],
+    ['.ql-list[value="ordered"]','有序列表'],
+    ['.ql-list[value="bullet"]','无序列表'],
+    ['.ql-align','对齐方式'],
+    ['.ql-indent[value="-1"]','减少缩进'],
+    ['.ql-indent[value="+1"]','增加缩进'],
+    ['.ql-script[value="sub"]','下标'],
+    ['.ql-script[value="super"]','上标'],
+    ['.ql-blockquote','引用'],
+    ['.ql-code-block','代码块'],
+    ['.ql-link','插入链接'],
+    ['.ql-image','上传图片'],
+    ['.ql-clean','清除格式']
+];
+quillTitleMap.forEach(([selector,title])=>{
+    document.querySelectorAll(selector).forEach(element=>{
+        element.setAttribute('title',title);
+        element.setAttribute('aria-label',title);
+    });
+});
+const quillPickerLabels={
+    font:{
+        'Arial':'Arial',
+        'Microsoft YaHei':'微软雅黑',
+        'SimSun':'宋体',
+        'SimHei':'黑体',
+        'Times New Roman':'Times New Roman',
+        'Courier New':'Courier New'
+    },
+    size:{
+        '12px':'12px',
+        '14px':'14px',
+        '16px':'16px',
+        '18px':'18px',
+        '20px':'20px',
+        '24px':'24px',
+        '28px':'28px',
+        '32px':'32px',
+        '36px':'36px',
+        '48px':'48px'
+    },
+    header:{
+        '1':'一级标题',
+        '2':'二级标题',
+        '3':'三级标题',
+        '4':'四级标题',
+        '5':'五级标题',
+        '6':'六级标题'
+    }
+};
+function labelQuillPicker(format,defaultLabel){
+    const picker=document.querySelector(`.ql-${format}.ql-picker`);
+    if(!picker){return;}
+    const labels=quillPickerLabels[format]||{};
+    picker.querySelectorAll('.ql-picker-item').forEach(item=>{
+        const value=item.getAttribute('data-value')||'';
+        item.setAttribute('data-label',labels[value]||defaultLabel);
+    });
+    const pickerLabel=picker.querySelector('.ql-picker-label');
+    if(pickerLabel){
+        const value=pickerLabel.getAttribute('data-value')||'';
+        pickerLabel.setAttribute('data-label',labels[value]||defaultLabel);
+    }
+}
+function labelQuillPickers(){
+    labelQuillPicker('font','默认字体');
+    labelQuillPicker('size','默认字号');
+    labelQuillPicker('header','正文');
+}
+labelQuillPickers();
+quill.on('editor-change',labelQuillPickers);
+document.querySelector('.ql-toolbar').addEventListener('click',()=>setTimeout(labelQuillPickers,0));
+function selectRichImage(img){
+    if(selectedRichImage){
+        selectedRichImage.classList.remove('rich-image-selected');
+    }
+    selectedRichImage=img;
+    if(selectedRichImage){
+        selectedRichImage.classList.add('rich-image-selected');
+        imageWidthInput.value=parseInt(selectedRichImage.style.width,10)||'';
+        imageSizeToolbar.classList.remove('d-none');
+        positionImageDragOverlay();
+    }else{
+        imageSizeToolbar.classList.add('d-none');
+        richImageDragOverlay.classList.add('d-none');
+    }
+}
+function applyImageWidth(width){
+    if(!selectedRichImage){return;}
+    if(width==='auto'){
+        selectedRichImage.style.removeProperty('width');
+        selectedRichImage.style.removeProperty('max-width');
+        selectedRichImage.style.removeProperty('height');
+        imageWidthInput.value='';
+        requestAnimationFrame(positionImageDragOverlay);
+        return;
+    }
+    selectedRichImage.style.width=width;
+    selectedRichImage.style.maxWidth='100%';
+    selectedRichImage.style.height='auto';
+    imageWidthInput.value=parseInt(width,10)||'';
+    requestAnimationFrame(positionImageDragOverlay);
+}
+function positionImageDragOverlay(){
+    if(!selectedRichImage){return;}
+    const imageRect=selectedRichImage.getBoundingClientRect();
+    const panelRect=richPanel.getBoundingClientRect();
+    richImageDragOverlay.style.left=(imageRect.left-panelRect.left+richPanel.scrollLeft)+'px';
+    richImageDragOverlay.style.top=(imageRect.top-panelRect.top+richPanel.scrollTop)+'px';
+    richImageDragOverlay.style.width=imageRect.width+'px';
+    richImageDragOverlay.style.height=imageRect.height+'px';
+    richImageDragOverlay.classList.remove('d-none');
+}
+function parseImageClip(img){
+    const clip=img.style.clipPath||'';
+    const match=clip.match(/^inset\(([^)]+)\)$/);
+    if(!match){return {top:0,right:0,bottom:0,left:0};}
+    const values=match[1].trim().split(/\s+/).map(value=>parseFloat(value)||0);
+    if(values.length===1){return {top:values[0],right:values[0],bottom:values[0],left:values[0]};}
+    if(values.length===2){return {top:values[0],right:values[1],bottom:values[0],left:values[1]};}
+    if(values.length===3){return {top:values[0],right:values[1],bottom:values[2],left:values[1]};}
+    return {top:values[0],right:values[1],bottom:values[2],left:values[3]};
+}
+function clampClipEdge(value,opposite){
+    return Math.max(0,Math.min(90-opposite,value));
+}
+function setImageClip(img,clip){
+    clip.top=clampClipEdge(clip.top,clip.bottom);
+    clip.bottom=clampClipEdge(clip.bottom,clip.top);
+    clip.left=clampClipEdge(clip.left,clip.right);
+    clip.right=clampClipEdge(clip.right,clip.left);
+    if(clip.top===0&&clip.right===0&&clip.bottom===0&&clip.left===0){
+        img.style.removeProperty('clip-path');
+        return;
+    }
+    img.style.clipPath=`inset(${clip.top.toFixed(1)}% ${clip.right.toFixed(1)}% ${clip.bottom.toFixed(1)}% ${clip.left.toFixed(1)}%)`;
+}
+function startImageDrag(event){
+    if(!selectedRichImage){return;}
+    const handle=event.target.closest('[data-image-handle]');
+    if(!handle){return;}
+    event.preventDefault();
+    event.stopPropagation();
+    const rect=selectedRichImage.getBoundingClientRect();
+    imageDragState={
+        handle:handle.dataset.imageHandle,
+        startX:event.clientX,
+        startY:event.clientY,
+        baseWidth:rect.width,
+        baseHeight:rect.height,
+        baseClip:parseImageClip(selectedRichImage)
+    };
+    document.body.classList.add('rich-image-dragging');
+    handle.setPointerCapture(event.pointerId);
+}
+function moveImageDrag(event){
+    if(!imageDragState||!selectedRichImage){return;}
+    event.preventDefault();
+    const dx=event.clientX-imageDragState.startX;
+    const dy=event.clientY-imageDragState.startY;
+    const handle=imageDragState.handle;
+    if(handle.length===2){
+        const direction=handle.includes('w')?-1:1;
+        const width=Math.max(40,Math.min(2000,imageDragState.baseWidth+dx*direction));
+        selectedRichImage.style.width=Math.round(width)+'px';
+        selectedRichImage.style.maxWidth='100%';
+        selectedRichImage.style.height='auto';
+        imageWidthInput.value=Math.round(width);
+    }else{
+        const clip={...imageDragState.baseClip};
+        if(handle==='n'){
+            clip.top=imageDragState.baseClip.top+(dy/imageDragState.baseHeight*100);
+        }else if(handle==='s'){
+            clip.bottom=imageDragState.baseClip.bottom-(dy/imageDragState.baseHeight*100);
+        }else if(handle==='w'){
+            clip.left=imageDragState.baseClip.left+(dx/imageDragState.baseWidth*100);
+        }else if(handle==='e'){
+            clip.right=imageDragState.baseClip.right-(dx/imageDragState.baseWidth*100);
+        }
+        setImageClip(selectedRichImage,clip);
+    }
+    positionImageDragOverlay();
+}
+function endImageDrag(){
+    if(!imageDragState){return;}
+    imageDragState=null;
+    document.body.classList.remove('rich-image-dragging');
+    positionImageDragOverlay();
+}
+richEditor.addEventListener('click',event=>{
+    if(event.target.tagName==='IMG'){
+        selectRichImage(event.target);
+        return;
+    }
+    if(!event.target.closest('#imageSizeToolbar')){
+        selectRichImage(null);
+    }
+});
+richImageDragOverlay.addEventListener('pointerdown',startImageDrag);
+richImageDragOverlay.addEventListener('pointermove',moveImageDrag);
+richImageDragOverlay.addEventListener('pointerup',endImageDrag);
+richImageDragOverlay.addEventListener('pointercancel',endImageDrag);
+window.addEventListener('resize',positionImageDragOverlay);
+document.addEventListener('scroll',positionImageDragOverlay,true);
+imageSizeToolbar.addEventListener('click',event=>{
+    const button=event.target.closest('[data-image-width]');
+    if(button){
+        applyImageWidth(button.dataset.imageWidth);
+    }
+});
+applyImageWidthBtn.addEventListener('click',()=>{
+    const width=parseInt(imageWidthInput.value,10);
+    if(width>0){
+        applyImageWidth(width+'px');
+    }
+});
+imageWidthInput.addEventListener('keydown',event=>{
+    if(event.key==='Enter'){
+        event.preventDefault();
+        applyImageWidthBtn.click();
+    }
+});
+let uploadTarget='markdown';
+function selectUploadTarget(target){
+    uploadTarget=target;
+    uploadImageInput.click();
+}
+function syncEditorMode(){
+    const richMode=formatHtml.checked;
+    markdownPanel.classList.toggle('d-none',richMode);
+    richPanel.classList.toggle('d-none',!richMode);
+}
+formatMarkdown.addEventListener('change',syncEditorMode);
+formatHtml.addEventListener('change',syncEditorMode);
+uploadCoverInput.addEventListener('change',async()=>{
+    const file=uploadCoverInput.files[0];
+    if(!file){return;}
+    if(uploadingCover){return;}
+    uploadingCover=true;
+    uploadCoverStatus.textContent='上传中...';
+    const formData=new FormData();
+    formData.append('image',file);
+    try{
+        const response=await fetch('/adm1n/uploads/covers',{method:'POST',body:formData});
+        const result=await response.json();
+        if(!response.ok){throw new Error(result.error||'上传失败');}
+        coverImageInput.value=result.url;
+        syncCoverPreview();
+        uploadCoverStatus.textContent='已上传: '+result.url;
+    }catch(err){
+        uploadCoverStatus.textContent=err.message;
+    }finally{
+        uploadingCover=false;
+        uploadCoverInput.value='';
+    }
+});
+uploadImageInput.addEventListener('change',async()=>{
+    const file=uploadImageInput.files[0];
+    if(!file){return;}
+    if(uploadingImage){return;}
+    uploadingImage=true;
+    uploadImageStatus.textContent='上传中...';
+    const formData=new FormData();
+    formData.append('image',file);
+    try{
+        const response=await fetch('/adm1n/uploads/images',{method:'POST',body:formData});
+        const result=await response.json();
+        if(!response.ok){throw new Error(result.error||'上传失败');}
+        const alt=file.name.replace(/\.[^.]+$/,'')||'图片';
+        if(uploadTarget==='html'){
+            const range=quill.getSelection(true);
+            quill.insertEmbed(range.index,'image',result.url);
+            quill.setSelection(range.index+1);
+        }else{
+            easyMDE.codemirror.replaceSelection(`![${alt}](${result.url})`);
+            easyMDE.codemirror.focus();
+        }
+        uploadImageStatus.textContent='已插入图片';
+    }catch(err){
+        uploadImageStatus.textContent=err.message;
+    }finally{
+        uploadingImage=false;
+        uploadImageInput.value='';
+    }
+});
+postForm.addEventListener('submit',()=>{
+    if(formatHtml.checked){
+        quill.root.querySelectorAll('.rich-image-selected').forEach(img=>img.classList.remove('rich-image-selected'));
+        contentTextarea.value=quill.root.innerHTML;
+    }else{
+        contentTextarea.value=easyMDE.value();
+    }
+});
+syncEditorMode();
 const publishedInput=document.getElementById('published');
 const scheduledInput=document.getElementById('scheduled');
 const scheduledAtGroup=document.getElementById('scheduled_at_group');

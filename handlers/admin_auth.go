@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,16 @@ func Login(c *gin.Context) {
 	session.Set("user_id", user.ID)
 	session.Set("username", user.Username)
 	session.Set("nickname", user.Nickname)
+	session.Set("last_login_ip", user.LastLoginIP)
+	if user.LastLoginAt != nil {
+		session.Set("last_login_at", user.LastLoginAt.Format("2006-01-02 15:04:05"))
+	}
 	session.Save()
+
+	now := time.Now()
+	user.LastLoginIP = c.ClientIP()
+	user.LastLoginAt = &now
+	database.DB.Save(&user)
 
 	c.Redirect(http.StatusFound, "/adm1n/dashboard")
 }

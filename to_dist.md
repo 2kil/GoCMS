@@ -115,7 +115,7 @@ cms reset-admin admin new-secret
 ```bash
 cms post list
 cms post get --slug cms-launch
-cms post save --title 标题 --slug article-slug --summary 摘要 --content 正文 --column-id 1 --published true
+cms post save --title 标题 --slug article-slug --summary 摘要 --content 正文 --content-format markdown --column-id 1 --published true
 cms post publish --slug article-slug
 cms post unpublish --id 1
 cms post delete --slug article-slug
@@ -136,8 +136,12 @@ cms column delete --slug news
 
 ```bash
 cms tag list
+cms tag get --key service_phone
 cms tag set --key service_phone --name 客服电话 --value 400-000-0000
 cms tag delete --key service_phone
+cms upload list
+cms upload rename --month 202607 --name old.jpg --new-name new.jpg
+cms upload delete --month 202607 --name new.jpg
 cms setting list
 cms setting get --key site_title
 cms setting set --key site_title --value 网站标题
@@ -219,12 +223,12 @@ templates/company/images/logo.png
 {{end}}
 ```
 
-网站设置示例：
+网站设置和自定义标签示例：
 
 ```html
 {{index .settings "site_title"}}
-{{index .settings "company_phone"}}
-{{index .settings "company_email"}}
+{{index .custom_tags "company_phone"}}
+{{index .custom_tags "company_email"}}
 {{index .custom_tags "service_phone"}}
 ```
 

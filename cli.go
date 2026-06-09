@@ -3,13 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"shuaitesteel.com/cms/config"
 	"shuaitesteel.com/cms/database"
 	"shuaitesteel.com/cms/handlers"
 	"shuaitesteel.com/cms/models"
@@ -45,6 +49,8 @@ func runCLI(args []string) {
 		runTagCLI(args[1], parseOptions(args[2:]))
 	case "setting":
 		runSettingCLI(args[1], parseOptions(args[2:]))
+	case "upload":
+		runUploadCLI(args[1], parseOptions(args[2:]))
 	case "db":
 		runDBCLI(args[1], parseOptions(args[2:]))
 	}
@@ -184,7 +190,7 @@ func runPostCLI(action string, opts cliOptions) {
 	case "get":
 		var post models.Post
 		mustFind(findPost(opts, &post))
-		fmt.Printf("ID: %d\n标题: %s\nSlug: %s\n摘要: %s\n发布: %t\n内容:\n%s\n", post.ID, post.Title, post.Slug, post.Summary, post.Published, post.Content)
+		fmt.Printf("ID: %d\n标题: %s\nSlug: %s\n摘要: %s\n格式: %s\n发布: %t\n内容:\n%s\n", post.ID, post.Title, post.Slug, post.Summary, normalizeCLIContentFormat(post.ContentFormat), post.Published, post.Content)
 	case "save":
 		post := models.Post{}
 		if id, ok := opts.uint("id"); ok {
@@ -214,7 +220,10 @@ func runPostCLI(action string, opts cliOptions) {
 		if post.Published {
 			post.ScheduledAt = nil
 		}
-		mustDB(database.DB.Save(&post).Error)
+		mustDB(database.DB.Model(&post).Updates(map[string]interface{}{
+			"published":    post.Published,
+			"scheduled_at": post.ScheduledAt,
+		}).Error)
 		afterContentChange()
 		fmt.Printf("文章发布状态已更新: id=%d published=%t\n", post.ID, post.Published)
 	default:
@@ -235,6 +244,9 @@ func applyPostOptions(post *models.Post, opts cliOptions) {
 	}
 	if v := opts.get("content"); v != "" {
 		post.Content = v
+	}
+	if v := opts.get("content-format"); v != "" {
+		post.ContentFormat = normalizeCLIContentFormat(v)
 	}
 	if v := opts.get("cover"); v != "" {
 		post.CoverImage = v
@@ -345,13 +357,15 @@ func runTagCLI(action string, opts cliOptions) {
 		for _, tag := range tags {
 			fmt.Printf("%d\t%s\t%s\t%s\n", tag.ID, tag.Key, tag.Name, tag.Value)
 		}
+	case "get":
+		key := required(opts, "key")
+		var tag models.CustomTag
+		mustFind(database.DB.Where("key = ?", key).First(&tag).Error)
+		fmt.Printf("ID: %d\nKey: %s\n名称: %s\n内容:\n%s\n", tag.ID, tag.Key, tag.Name, tag.Value)
 	case "set":
 		key := required(opts, "key")
 		tag := models.CustomTag{}
-		err := database.DB.Where("key = ?", key).First(&tag).Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			mustDB(err)
-		}
+		mustDB(database.DB.Where("key = ?", key).Find(&tag).Error)
 		tag.Key = key
 		if v := opts.get("name"); v != "" {
 			tag.Name = v
@@ -391,10 +405,7 @@ func runSettingCLI(action string, opts cliOptions) {
 	case "set":
 		key := required(opts, "key")
 		setting := models.Setting{}
-		err := database.DB.Where("key = ?", key).First(&setting).Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			mustDB(err)
-		}
+		mustDB(database.DB.Where("key = ?", key).Find(&setting).Error)
 		setting.Key = key
 		setting.Value = opts.get("value")
 		mustDB(database.DB.Save(&setting).Error)
@@ -402,6 +413,53 @@ func runSettingCLI(action string, opts cliOptions) {
 		fmt.Printf("设置已保存: key=%s\n", key)
 	default:
 		printCommandHelp("setting")
+		os.Exit(2)
+	}
+}
+
+func runUploadCLI(action string, opts cliOptions) {
+	switch action {
+	case "list":
+		items := loadCLIUploadedImages()
+		fmt.Println("Month\tName\tDate\tSize\tURL")
+		for _, item := range items {
+			fmt.Printf("%s\t%s\t%s\t%s\t%s\n", item.Month, item.Name, item.Date, item.Size, item.URL)
+		}
+	case "rename":
+		month := required(opts, "month")
+		name := required(opts, "name")
+		newName := normalizeCLIUploadFileName(required(opts, "new-name"), filepath.Ext(name))
+		if newName == "" || !isAllowedCLIImageExt(strings.ToLower(filepath.Ext(newName))) {
+			fail("新文件名无效: %s", opts.get("new-name"))
+		}
+		oldPath, err := cliUploadImagePath(month, name)
+		if err != nil {
+			fail("图片路径无效")
+		}
+		newPath, err := cliUploadImagePath(month, newName)
+		if err != nil {
+			fail("新图片路径无效")
+		}
+		if _, err := os.Stat(newPath); err == nil {
+			fail("目标文件已存在: %s", newName)
+		}
+		if err := os.Rename(oldPath, newPath); err != nil {
+			fail("图片重命名失败: %v", err)
+		}
+		fmt.Printf("图片已重命名: %s/%s -> %s/%s\n", month, name, month, newName)
+	case "delete":
+		month := required(opts, "month")
+		name := required(opts, "name")
+		path, err := cliUploadImagePath(month, name)
+		if err != nil {
+			fail("图片路径无效")
+		}
+		if err := os.Remove(path); err != nil {
+			fail("图片删除失败: %v", err)
+		}
+		fmt.Printf("图片已删除: %s/%s\n", month, name)
+	default:
+		printCommandHelp("upload")
 		os.Exit(2)
 	}
 }
@@ -454,6 +512,120 @@ func repairDB(generateStatic bool) {
 	fmt.Printf("数据库修复完成，影响行数: %d\n", updates)
 }
 
+type cliUploadImageItem struct {
+	Name      string
+	URL       string
+	Month     string
+	Date      string
+	Size      string
+	SizeBytes int64
+}
+
+func loadCLIUploadedImages() []cliUploadImageItem {
+	root := config.ResolvePath("upload")
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return nil
+	}
+
+	var items []cliUploadImageItem
+	for _, entry := range entries {
+		if !entry.IsDir() || !isCLIUploadMonthDir(entry.Name()) {
+			continue
+		}
+		month := entry.Name()
+		dir := filepath.Join(root, month)
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, file := range files {
+			if file.IsDir() || !isAllowedCLIImageExt(strings.ToLower(filepath.Ext(file.Name()))) {
+				continue
+			}
+			info, err := file.Info()
+			if err != nil {
+				continue
+			}
+			items = append(items, cliUploadImageItem{
+				Name:      file.Name(),
+				URL:       "/upload/" + month + "/" + url.PathEscape(file.Name()),
+				Month:     month,
+				Date:      info.ModTime().Format("2006-01-02 15:04"),
+				Size:      formatCLIFileSize(info.Size()),
+				SizeBytes: info.Size(),
+			})
+		}
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].Month == items[j].Month {
+			return items[i].Name > items[j].Name
+		}
+		return items[i].Month > items[j].Month
+	})
+	return items
+}
+
+func cliUploadImagePath(month, name string) (string, error) {
+	if !isCLIUploadMonthDir(month) || name == "" || filepath.Base(name) != name || !isAllowedCLIImageExt(strings.ToLower(filepath.Ext(name))) {
+		return "", os.ErrInvalid
+	}
+	return filepath.Join(config.ResolvePath("upload"), month, name), nil
+}
+
+func normalizeCLIUploadFileName(name, fallbackExt string) string {
+	name = strings.TrimSpace(filepath.Base(name))
+	if name == "." || name == string(filepath.Separator) {
+		return ""
+	}
+	ext := strings.ToLower(filepath.Ext(name))
+	base := strings.TrimSuffix(name, filepath.Ext(name))
+	if ext == "" {
+		ext = strings.ToLower(fallbackExt)
+	}
+	base = strings.Map(func(r rune) rune {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_' {
+			return r
+		}
+		return '_'
+	}, base)
+	base = strings.Trim(base, "_")
+	if base == "" {
+		return ""
+	}
+	return base + ext
+}
+
+func isCLIUploadMonthDir(name string) bool {
+	if len(name) != 6 {
+		return false
+	}
+	if _, err := time.Parse("200601", name); err != nil {
+		return false
+	}
+	return true
+}
+
+func isAllowedCLIImageExt(ext string) bool {
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp":
+		return true
+	default:
+		return false
+	}
+}
+
+func formatCLIFileSize(size int64) string {
+	if size < 1024 {
+		return strconv.FormatInt(size, 10) + " B"
+	}
+	if size < 1024*1024 {
+		return strconv.FormatFloat(float64(size)/1024, 'f', 1, 64) + " KB"
+	}
+	return strconv.FormatFloat(float64(size)/(1024*1024), 'f', 1, 64) + " MB"
+}
+
 func execRepair(sql string) int64 {
 	result := database.DB.Exec(sql)
 	mustDB(result.Error)
@@ -492,6 +664,13 @@ func firstUserID() uint {
 		fail("无法找到默认作者，请先创建后台用户")
 	}
 	return user.ID
+}
+
+func normalizeCLIContentFormat(format string) string {
+	if format == "html" {
+		return "html"
+	}
+	return "markdown"
 }
 
 func findPost(opts cliOptions, post *models.Post) error {
@@ -557,13 +736,15 @@ func printCommandHelp(command string) {
 	case "user":
 		fmt.Println("user: list | create --username --password [--nickname] [--admin] | password --username --password | delete --id")
 	case "post":
-		fmt.Println("post: list | get (--id|--slug) | save [--id] --title --slug [--summary] [--content] [--cover] [--column-id] [--published true|false] [--scheduled-at] | delete (--id|--slug) | publish (--id|--slug) | unpublish (--id|--slug)")
+		fmt.Println("post: list | get (--id|--slug) | save [--id] --title --slug [--summary] [--content] [--content-format markdown|html] [--cover] [--column-id] [--published true|false] [--scheduled-at] | delete (--id|--slug) | publish (--id|--slug) | unpublish (--id|--slug)")
 	case "column":
 		fmt.Println("column: list | get (--id|--slug) | save [--id] --name --slug [--parent-id] [--no-parent] [--sort] [--is-page] [--page-template] [--content] | delete (--id|--slug)")
 	case "tag":
-		fmt.Println("tag: list | set --key --value [--name] | delete --key")
+		fmt.Println("tag: list | get --key | set --key --value [--name] | delete --key")
 	case "setting":
 		fmt.Println("setting: list | get --key | set --key --value")
+	case "upload":
+		fmt.Println("upload: list | rename --month --name --new-name | delete --month --name")
 	case "db":
 		fmt.Println("db: init | migrate | schema | repair [--generate-static]")
 	default:

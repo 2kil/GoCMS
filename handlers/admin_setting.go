@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"shuaitesteel.com/cms/database"
@@ -13,19 +12,15 @@ import (
 func ShowSettings(c *gin.Context) {
 	settingMap := loadSettingMap()
 
-	var user models.User
-	database.DB.First(&user, c.GetUint("user_id"))
-
 	c.HTML(http.StatusOK, "settings.html", gin.H{
 		"settings":       settingMap,
 		"frontTemplates": availableFrontTemplates(),
 		"nickname":       c.MustGet("nickname"),
-		"username":       user.Username,
 	})
 }
 
 func SaveSettings(c *gin.Context) {
-	keys := []string{"site_title", "site_keywords", "site_description", "site_favicon", "site_footer", "front_template", "company_name", "company_short_name", "company_contact", "company_phone", "company_email", "company_address", "company_website"}
+	keys := []string{"site_title", "site_keywords", "site_description", "site_favicon", "site_footer", "front_template"}
 	saveSettingsKeys(c, keys)
 
 	InvalidateCache()
@@ -59,9 +54,9 @@ func saveSettingsKeys(c *gin.Context, keys []string) {
 }
 
 func SaveAccount(c *gin.Context) {
-	username := c.PostForm("username")
 	oldPassword := c.PostForm("old_password")
 	newPassword := c.PostForm("new_password")
+	confirmPassword := c.PostForm("confirm_password")
 
 	userID := c.GetUint("user_id")
 	var user models.User
@@ -78,16 +73,19 @@ func SaveAccount(c *gin.Context) {
 		})
 	}
 
-	wantChangeUsername := username != "" && username != user.Username
 	wantChangePassword := newPassword != ""
 
-	if !wantChangeUsername && !wantChangePassword {
+	if !wantChangePassword {
 		c.Redirect(http.StatusFound, "/adm1n/settings")
 		return
 	}
 
 	if oldPassword == "" {
-		showError("修改用户名或密码时必须填写当前密码")
+		showError("修改密码时必须填写当前密码")
+		return
+	}
+	if newPassword != confirmPassword {
+		showError("两次输入的新密码不一致")
 		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
@@ -95,30 +93,14 @@ func SaveAccount(c *gin.Context) {
 		return
 	}
 
-	if wantChangeUsername {
-		var existing models.User
-		if database.DB.Where("username = ?", username).First(&existing).Error == nil {
-			showError("用户名已存在")
-			return
-		}
-		user.Username = username
+	hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		showError("密码加密失败")
+		return
 	}
-
-	if wantChangePassword {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-		if err != nil {
-			showError("密码加密失败")
-			return
-		}
-		user.Password = string(hashed)
-	}
+	user.Password = string(hashed)
 
 	database.DB.Save(&user)
-
-	session := sessions.Default(c)
-	session.Set("username", user.Username)
-	session.Set("nickname", user.Nickname)
-	session.Save()
 
 	c.Redirect(http.StatusFound, "/adm1n/settings")
 }

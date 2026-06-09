@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/css/bootstrap.css">
     <link rel="stylesheet" href="/css/fonts.css">
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/quill-content.css">
 </head>
 <body>
     <div class="preloader">
@@ -49,8 +50,8 @@
                                 </div>
                                 <div class="rd-navbar-collapse">
                                     <ul class="rd-navbar-contacts-3">
-                                        {{with index .settings "company_phone"}}<li><a class="phone" href="tel:{{.}}">{{.}}</a></li>{{end}}
-                                        {{with index .settings "company_email"}}<li><a class="mail" href="mailto:{{.}}">{{.}}</a></li>{{end}}
+                                        {{with index .custom_tags "company_phone"}}<li><a class="phone" href="tel:{{.}}">{{.}}</a></li>{{end}}
+                                        {{with index .custom_tags "company_email"}}<li><a class="mail" href="mailto:{{.}}">{{.}}</a></li>{{end}}
                                     </ul>
                                     <a class="button button-xs button-outline button-default-outline-2 button-winona" href="/column/contact.html"><span class="button-text">联系我们</span><span class="icon linearicons-pencil"></span></a>
                                 </div>
@@ -69,14 +70,14 @@
                     <div class="row row-50 justify-content-sm-between">
                         <div class="col-sm-6 col-md-4 col-xl-3">
                             <h6 class="footer-corporate-title oh-desktop"><span class="d-inline-block wow slideInUp">关于我们</span></h6>
-                            <p class="wow fadeInRight">{{with index .settings "company_name"}}{{.}}{{else}}{{index .settings "site_description"}}{{end}}</p>
+                            <p class="wow fadeInRight">{{with index .custom_tags "company_name"}}{{.}}{{else}}{{index .settings "site_description"}}{{end}}</p>
                         </div>
                         <div class="col-sm-5 col-md-4 col-lg-3">
                             <h6 class="footer-corporate-title oh-desktop"><span class="d-inline-block wow slideInUp">联系方式</span></h6>
                             <ul class="footer-creative-contacts d-inline-block d-md-block">
-                                {{with index .settings "company_phone"}}<li class="wow fadeInLeft"><p class="footer-creative-contacts-title">电话</p><a class="phone" href="tel:{{.}}">{{.}}</a></li>{{end}}
-                                {{with index .settings "company_address"}}<li class="wow fadeInLeft" data-wow-delay=".05s"><p class="footer-creative-contacts-title">地址</p><a class="address" href="#">{{.}}</a></li>{{end}}
-                                {{with index .settings "company_email"}}<li class="wow fadeInLeft" data-wow-delay=".1s"><p class="footer-creative-contacts-title">邮箱</p><a class="mail" href="mailto:{{.}}">{{.}}</a></li>{{end}}
+                                {{with index .custom_tags "company_phone"}}<li class="wow fadeInLeft"><p class="footer-creative-contacts-title">电话</p><a class="phone" href="tel:{{.}}">{{.}}</a></li>{{end}}
+                                {{with index .custom_tags "company_address"}}<li class="wow fadeInLeft" data-wow-delay=".05s"><p class="footer-creative-contacts-title">地址</p><a class="address" href="#">{{.}}</a></li>{{end}}
+                                {{with index .custom_tags "company_email"}}<li class="wow fadeInLeft" data-wow-delay=".1s"><p class="footer-creative-contacts-title">邮箱</p><a class="mail" href="mailto:{{.}}">{{.}}</a></li>{{end}}
                             </ul>
                         </div>
                         <div class="col-md-4">

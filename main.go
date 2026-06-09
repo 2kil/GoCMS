@@ -53,7 +53,7 @@ func main() {
 		log.Printf("静态页面生成完成: %s", config.Cfg.Static.Dir)
 	case "migrate":
 		log.Printf("数据库迁移完成: %s", config.Cfg.Database.Path)
-	case "user", "post", "column", "tag", "setting", "db", "reset-admin":
+	case "user", "post", "column", "tag", "setting", "upload", "db", "reset-admin":
 		runCLI(args)
 	default:
 		fmt.Fprintf(os.Stderr, "未知命令: %s\n\n", cmd)
@@ -64,7 +64,7 @@ func main() {
 
 func isCLICommand(cmd string) bool {
 	switch cmd {
-	case "user", "post", "column", "tag", "setting", "db", "reset-admin":
+	case "user", "post", "column", "tag", "setting", "upload", "db", "reset-admin":
 		return true
 	default:
 		return false
@@ -99,6 +99,7 @@ func runServer() {
 	r.LoadHTMLGlob(config.AdminTemplateGlob())
 
 	r.Static("/static", config.ResolvePath("static"))
+	r.Static("/upload", config.ResolvePath("upload"))
 	r.Static("/admin-assets/css", filepath.Join(config.TemplateDir(), "admin", "css"))
 
 	store := cookie.NewStore([]byte(config.Cfg.Session.Secret))
@@ -121,6 +122,11 @@ func runServer() {
 		})
 		{
 			auth.GET("/dashboard", handlers.Dashboard)
+			auth.POST("/uploads/images", handlers.UploadImage)
+			auth.POST("/uploads/covers", handlers.UploadCoverImage)
+			auth.GET("/uploads", handlers.ListUploads)
+			auth.POST("/uploads/rename", handlers.RenameUpload)
+			auth.POST("/uploads/delete", handlers.DeleteUpload)
 
 			auth.GET("/posts", handlers.ListPosts)
 			auth.GET("/posts/edit/:id", handlers.ShowPostEdit)
@@ -172,6 +178,7 @@ func printUsage() {
   column <action>               栏目维护
   tag <action>                  自定义标签维护
   setting <action>              网站设置维护
+  upload <action>               上传图片维护
   db <action>                   数据库初始化、结构输出和修复
   reset-admin <user> <password> 重置已有管理员密码（兼容旧命令）
   version                       输出版本号
