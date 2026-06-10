@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -26,7 +25,10 @@ func staticFile(path string) string {
 	if !config.Cfg.Static.Enable {
 		return ""
 	}
-	full := filepath.Join(config.Cfg.Static.Dir, path)
+	full, ok := safePublicFilePath(path)
+	if !ok {
+		return ""
+	}
 	if _, err := os.Stat(full); err == nil {
 		return full
 	}
@@ -66,12 +68,11 @@ func ServePublic(c *gin.Context) {
 		return
 	}
 
-	cleanPath := path.Clean("/" + requestPath)
-	if cleanPath == "/" {
-		cleanPath = "/index.html"
+	filePath, ok := safePublicFilePath(requestPath)
+	if !ok {
+		c.Status(http.StatusNotFound)
+		return
 	}
-
-	filePath := filepath.Join(config.Cfg.Static.Dir, filepath.FromSlash(strings.TrimPrefix(cleanPath, "/")))
 	if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
 		c.File(filePath)
 		return
@@ -84,6 +85,7 @@ func Home(c *gin.Context) {
 	serveStaticOr(c, "index.html", func() {
 		var posts []models.Post
 		database.DB.Where("published = ?", true).Preload("Column").Order("id desc").Limit(10).Find(&posts)
+		posts = filterValidFrontPosts(posts)
 
 		renderFront(c, http.StatusOK, gin.H{
 			"posts":       posts,
@@ -95,6 +97,10 @@ func Home(c *gin.Context) {
 
 func ShowPost(c *gin.Context) {
 	slug := strings.TrimSuffix(c.Param("slug"), ".html")
+	if !IsValidSlug(slug) {
+		renderFront(c, http.StatusNotFound, gin.H{"error": "文章不存在"})
+		return
+	}
 
 	serveStaticOr(c, filepath.Join("post", slug+".html"), func() {
 		var post models.Post
@@ -114,6 +120,10 @@ func ShowPost(c *gin.Context) {
 
 func ListPostsByColumn(c *gin.Context) {
 	slug := c.Param("slug")
+	if !IsValidSlug(slug) {
+		renderFront(c, http.StatusNotFound, gin.H{"error": "栏目不存在"})
+		return
+	}
 
 	serveStaticOr(c, filepath.Join("column", slug+".html"), func() {
 		var column models.Column
@@ -128,6 +138,7 @@ func ListPostsByColumn(c *gin.Context) {
 
 		var posts []models.Post
 		database.DB.Where("column_id IN ? AND published = ?", columnIDs, true).Preload("Column").Order("id desc").Find(&posts)
+		posts = filterValidFrontPosts(posts)
 		data := gin.H{
 			"posts":       posts,
 			"columns":     loadColumnsFlat(),

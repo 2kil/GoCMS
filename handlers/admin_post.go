@@ -112,10 +112,6 @@ func SavePost(c *gin.Context) {
 	scheduledAtStr := c.PostForm("scheduled_at")
 	columnIDStr := c.PostForm("column_id")
 
-	if slug == "" {
-		slug = uuid.New().String()
-	}
-
 	userID := c.GetUint("user_id")
 
 	var post models.Post
@@ -126,6 +122,10 @@ func SavePost(c *gin.Context) {
 			c.Redirect(http.StatusFound, "/adm1n/posts")
 			return
 		}
+	}
+
+	if slug == "" {
+		slug = uuid.New().String()
 	}
 
 	post.Title = title
@@ -153,6 +153,11 @@ func SavePost(c *gin.Context) {
 		post.ColumnID = nil
 	}
 
+	if !IsValidSlug(slug) {
+		renderPostEditSaveError(c, post, "Slug 只能使用字母、数字、横线和下划线，且必须以字母或数字开头")
+		return
+	}
+
 	var dbErr error
 	if post.ID != 0 {
 		dbErr = database.DB.Save(&post).Error
@@ -160,27 +165,31 @@ func SavePost(c *gin.Context) {
 		dbErr = database.DB.Create(&post).Error
 	}
 	if dbErr != nil {
-		var columns []models.Column
-		database.DB.Order("sort_order asc").Find(&columns)
-		var columnID uint
-		if post.ColumnID != nil {
-			columnID = *post.ColumnID
-		}
-		c.HTML(http.StatusOK, "post_edit.html", gin.H{
-			"error":          "保存失败: " + dbErr.Error(),
-			"post":           post,
-			"columns":        columns,
-			"uploadedImages": loadUploadedImages(),
-			"column_id":      columnID,
-			"content_format": normalizeContentFormat(post.ContentFormat),
-			"nickname":       c.MustGet("nickname"),
-		})
+		renderPostEditSaveError(c, post, "保存失败: "+dbErr.Error())
 		return
 	}
 
 	InvalidateCache()
 	GenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/posts")
+}
+
+func renderPostEditSaveError(c *gin.Context, post models.Post, message string) {
+	var columns []models.Column
+	database.DB.Order("sort_order asc").Find(&columns)
+	var columnID uint
+	if post.ColumnID != nil {
+		columnID = *post.ColumnID
+	}
+	c.HTML(http.StatusOK, "post_edit.html", gin.H{
+		"error":          message,
+		"post":           post,
+		"columns":        columns,
+		"uploadedImages": loadUploadedImages(),
+		"column_id":      columnID,
+		"content_format": normalizeContentFormat(post.ContentFormat),
+		"nickname":       c.MustGet("nickname"),
+	})
 }
 
 func normalizeContentFormat(format string) string {

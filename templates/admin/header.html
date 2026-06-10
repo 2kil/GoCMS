@@ -11,6 +11,46 @@
     <link rel="stylesheet" href="/admin-assets/css/admin.css">
 </head>
 <body class="admin-page">
+<script>
+(function(){
+    function csrfToken(){
+        const match=document.cookie.match(/(?:^|;\s*)cms_csrf=([^;]+)/);
+        return match?decodeURIComponent(match[1]):'';
+    }
+    function ensureFormToken(form){
+        if(!form || String(form.method).toUpperCase()!=='POST'){return;}
+        let input=form.querySelector('input[name="_csrf"]');
+        if(!input){
+            input=document.createElement('input');
+            input.type='hidden';
+            input.name='_csrf';
+            form.appendChild(input);
+        }
+        input.value=csrfToken();
+    }
+    document.addEventListener('submit',function(event){
+        ensureFormToken(event.target);
+    },true);
+    document.addEventListener('DOMContentLoaded',function(){
+        document.querySelectorAll('form[method="post"]').forEach(ensureFormToken);
+    });
+    if(window.fetch){
+        const originalFetch=window.fetch;
+        window.fetch=function(input,init){
+            init=init||{};
+            const requestUrl=typeof input==='string'?input:(input&&input.url)||'';
+            const url=new URL(requestUrl, window.location.href);
+            const method=String(init.method || (input&&input.method) || 'GET').toUpperCase();
+            if(url.origin===window.location.origin && !['GET','HEAD','OPTIONS','TRACE'].includes(method)){
+                const headers=new Headers(init.headers || (input&&input.headers) || {});
+                headers.set('X-CSRF-Token', csrfToken());
+                init.headers=headers;
+            }
+            return originalFetch(input,init);
+        };
+    }
+})();
+</script>
 <nav class="navbar navbar-expand navbar-dark bg-deepgreen px-4">
     <a class="navbar-brand" href="/adm1n/dashboard">CMS 管理后台</a>
     <ul class="navbar-nav ms-auto align-items-center">

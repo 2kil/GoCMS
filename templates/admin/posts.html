@@ -28,11 +28,17 @@
                 <td>
                     <a href="/adm1n/posts/edit/{{.ID}}" class="btn btn-sm btn-outline-deepgreen">编辑</a>
                     {{if .Published}}
-                    <a href="/adm1n/posts/toggle/{{.ID}}" class="btn btn-sm btn-outline-warning">隐藏</a>
+                    <form method="post" action="/adm1n/posts/toggle/{{.ID}}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-warning">隐藏</button>
+                    </form>
                     {{else}}
-                    <a href="/adm1n/posts/toggle/{{.ID}}" class="btn btn-sm btn-outline-success">发布</a>
+                    <form method="post" action="/adm1n/posts/toggle/{{.ID}}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-success">发布</button>
+                    </form>
                     {{end}}
-                    <a href="/adm1n/posts/delete/{{.ID}}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确认删除？')">删除</a>
+                    <form method="post" action="/adm1n/posts/delete/{{.ID}}" class="d-inline" onsubmit="return confirm('确认删除？')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                    </form>
                 </td>
             </tr>
             {{else}}

@@ -237,19 +237,22 @@ func applyPostOptions(post *models.Post, opts cliOptions) {
 		post.Title = v
 	}
 	if v := opts.get("slug"); v != "" {
+		if !handlers.IsValidSlug(v) {
+			fail("文章 slug 只能使用字母、数字、横线和下划线，且必须以字母或数字开头")
+		}
 		post.Slug = v
 	}
-	if v := opts.get("summary"); v != "" {
-		post.Summary = v
+	if _, ok := opts["summary"]; ok {
+		post.Summary = opts.get("summary")
 	}
-	if v := opts.get("content"); v != "" {
-		post.Content = v
+	if _, ok := opts["content"]; ok {
+		post.Content = opts.get("content")
 	}
 	if v := opts.get("content-format"); v != "" {
 		post.ContentFormat = normalizeCLIContentFormat(v)
 	}
-	if v := opts.get("cover"); v != "" {
-		post.CoverImage = v
+	if _, ok := opts["cover"]; ok {
+		post.CoverImage = opts.get("cover")
 	}
 	if v, ok := opts.uint("column-id"); ok {
 		post.ColumnID = &v
@@ -320,6 +323,9 @@ func applyColumnOptions(column *models.Column, opts cliOptions) {
 		column.Name = v
 	}
 	if v := opts.get("slug"); v != "" {
+		if !handlers.IsValidSlug(v) {
+			fail("栏目 slug 只能使用字母、数字、横线和下划线，且必须以字母或数字开头")
+		}
 		column.Slug = v
 	}
 	if _, ok := opts["is-page"]; ok {
@@ -522,41 +528,20 @@ type cliUploadImageItem struct {
 }
 
 func loadCLIUploadedImages() []cliUploadImageItem {
+	var items []cliUploadImageItem
+
 	root := config.ResolvePath("upload")
 	entries, err := os.ReadDir(root)
-	if err != nil {
-		return nil
-	}
-
-	var items []cliUploadImageItem
-	for _, entry := range entries {
-		if !entry.IsDir() || !isCLIUploadMonthDir(entry.Name()) {
-			continue
-		}
-		month := entry.Name()
-		dir := filepath.Join(root, month)
-		files, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, file := range files {
-			if file.IsDir() || !isAllowedCLIImageExt(strings.ToLower(filepath.Ext(file.Name()))) {
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() || !isCLIUploadMonthDir(entry.Name()) {
 				continue
 			}
-			info, err := file.Info()
-			if err != nil {
-				continue
-			}
-			items = append(items, cliUploadImageItem{
-				Name:      file.Name(),
-				URL:       "/upload/" + month + "/" + url.PathEscape(file.Name()),
-				Month:     month,
-				Date:      info.ModTime().Format("2006-01-02 15:04"),
-				Size:      formatCLIFileSize(info.Size()),
-				SizeBytes: info.Size(),
-			})
+			month := entry.Name()
+			items = appendCLIUploadImageItems(items, filepath.Join(root, month), month, "/upload/"+month+"/")
 		}
 	}
+	items = appendCLIUploadImageItems(items, config.ResolvePath(filepath.Join("static", "uploads")), "static", "/static/uploads/")
 
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].Month == items[j].Month {
@@ -567,11 +552,43 @@ func loadCLIUploadedImages() []cliUploadImageItem {
 	return items
 }
 
+func appendCLIUploadImageItems(items []cliUploadImageItem, dir, month, urlPrefix string) []cliUploadImageItem {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return items
+	}
+	for _, file := range files {
+		if file.IsDir() || !isAllowedCLIImageExt(strings.ToLower(filepath.Ext(file.Name()))) {
+			continue
+		}
+		info, err := file.Info()
+		if err != nil {
+			continue
+		}
+		items = append(items, cliUploadImageItem{
+			Name:      file.Name(),
+			URL:       urlPrefix + url.PathEscape(file.Name()),
+			Month:     month,
+			Date:      info.ModTime().Format("2006-01-02 15:04"),
+			Size:      formatCLIFileSize(info.Size()),
+			SizeBytes: info.Size(),
+		})
+	}
+	return items
+}
+
 func cliUploadImagePath(month, name string) (string, error) {
-	if !isCLIUploadMonthDir(month) || name == "" || filepath.Base(name) != name || !isAllowedCLIImageExt(strings.ToLower(filepath.Ext(name))) {
+	if !isCLIUploadBucket(month) || name == "" || filepath.Base(name) != name || !isAllowedCLIImageExt(strings.ToLower(filepath.Ext(name))) {
 		return "", os.ErrInvalid
 	}
+	if month == "static" {
+		return filepath.Join(config.ResolvePath(filepath.Join("static", "uploads")), name), nil
+	}
 	return filepath.Join(config.ResolvePath("upload"), month, name), nil
+}
+
+func isCLIUploadBucket(name string) bool {
+	return name == "static" || isCLIUploadMonthDir(name)
 }
 
 func normalizeCLIUploadFileName(name, fallbackExt string) string {

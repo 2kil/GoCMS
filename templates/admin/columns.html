@@ -54,7 +54,9 @@
                 <td>{{.SortOrder}}</td>
                 <td>
                     <a href="/adm1n/columns/edit/{{.ID}}" class="btn btn-sm btn-outline-deepgreen">编辑</a>
-                    <a href="/adm1n/columns/delete/{{.ID}}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确认删除？')">删除</a>
+                    <form method="post" action="/adm1n/columns/delete/{{.ID}}" class="d-inline" onsubmit="return confirm('确认删除？')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                    </form>
                 </td>
             </tr>
             {{if .Children}}
@@ -68,7 +70,9 @@
                 <td>{{.SortOrder}}</td>
                 <td>
                     <a href="/adm1n/columns/edit/{{.ID}}" class="btn btn-sm btn-outline-deepgreen">编辑</a>
-                    <a href="/adm1n/columns/delete/{{.ID}}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确认删除？')">删除</a>
+                    <form method="post" action="/adm1n/columns/delete/{{.ID}}" class="d-inline" onsubmit="return confirm('确认删除？')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                    </form>
                 </td>
             </tr>
             {{end}}

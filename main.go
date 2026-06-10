@@ -113,6 +113,7 @@ func runServer() {
 
 		auth := admin.Group("")
 		auth.Use(middleware.RequireAuth())
+		auth.Use(middleware.RequireCSRF())
 		auth.Use(func(c *gin.Context) {
 			session := sessions.Default(c)
 			c.Set("user_id", session.Get("user_id"))
@@ -124,26 +125,28 @@ func runServer() {
 			auth.GET("/dashboard", handlers.Dashboard)
 			auth.POST("/uploads/images", handlers.UploadImage)
 			auth.POST("/uploads/covers", handlers.UploadCoverImage)
+			auth.POST("/uploads/upload", handlers.UploadImages)
 			auth.GET("/uploads", handlers.ListUploads)
 			auth.POST("/uploads/rename", handlers.RenameUpload)
 			auth.POST("/uploads/delete", handlers.DeleteUpload)
+			auth.POST("/uploads/delete-selected", handlers.DeleteUploads)
 
 			auth.GET("/posts", handlers.ListPosts)
 			auth.GET("/posts/edit/:id", handlers.ShowPostEdit)
 			auth.POST("/posts/save/:id", handlers.SavePost)
-			auth.GET("/posts/delete/:id", handlers.DeletePost)
-			auth.GET("/posts/toggle/:id", handlers.TogglePost)
+			auth.POST("/posts/delete/:id", handlers.DeletePost)
+			auth.POST("/posts/toggle/:id", handlers.TogglePost)
 
 			auth.GET("/columns", handlers.ListColumns)
 			auth.GET("/columns/edit/:id", handlers.ShowColumnEdit)
 			auth.POST("/columns/save/:id", handlers.SaveColumn)
 			auth.POST("/columns/reorder", handlers.ReorderColumns)
-			auth.GET("/columns/delete/:id", handlers.DeleteColumn)
+			auth.POST("/columns/delete/:id", handlers.DeleteColumn)
 
 			auth.GET("/tags", handlers.ListTags)
 			auth.GET("/tags/edit/:id", handlers.ShowTagEdit)
 			auth.POST("/tags/save/:id", handlers.SaveTag)
-			auth.GET("/tags/delete/:id", handlers.DeleteTag)
+			auth.POST("/tags/delete/:id", handlers.DeleteTag)
 
 			auth.GET("/settings", handlers.ShowSettings)
 			auth.POST("/settings", handlers.SaveSettings)

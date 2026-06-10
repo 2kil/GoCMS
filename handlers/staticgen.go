@@ -108,21 +108,28 @@ func copyFrontTemplateAssets(templateName string) {
 		if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
 			return err
 		}
-		srcFile, err := os.Open(srcPath)
-		if err != nil {
-			return err
-		}
-		defer srcFile.Close()
-		dstFile, err := os.Create(dstPath)
-		if err != nil {
-			return err
-		}
-		defer dstFile.Close()
-		_, err = io.Copy(dstFile, srcFile)
-		return err
+		return copyFile(dstPath, srcPath)
 	}); err != nil {
 		log.Printf("静态生成: 复制模板资源失败: %v", err)
 	}
+}
+
+func copyFile(dstPath, srcPath string) error {
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		dstFile.Close()
+		return err
+	}
+	return dstFile.Close()
 }
 
 func GenerateStatic() {
@@ -156,6 +163,7 @@ func GenerateStatic() {
 
 	var posts []models.Post
 	database.DB.Where("published = ?", true).Preload("Column").Preload("User").Order("id desc").Find(&posts)
+	posts = filterValidFrontPosts(posts)
 
 	writeStaticFile(tpl, "index.html", map[string]interface{}{
 		"posts":       posts,
@@ -210,6 +218,7 @@ func RefreshStatic() {
 
 	var posts []models.Post
 	database.DB.Where("published = ?", true).Preload("Column").Preload("User").Order("id desc").Find(&posts)
+	posts = filterValidFrontPosts(posts)
 
 	writeStaticFile(tpl, "index.html", map[string]interface{}{
 		"posts":       posts,
@@ -235,6 +244,9 @@ func RefreshStatic() {
 }
 
 func RemoveStaticPost(slug string) {
+	if !IsValidSlug(slug) {
+		return
+	}
 	p := filepath.Join(staticDir(), "post", slug+".html")
 	os.Remove(p)
 }
@@ -259,6 +271,7 @@ func GenerateStaticIndex() {
 
 	var posts []models.Post
 	database.DB.Where("published = ?", true).Preload("Column").Preload("User").Order("id desc").Find(&posts)
+	posts = filterValidFrontPosts(posts)
 
 	writeStaticFile(tpl, "index.html", map[string]interface{}{
 		"posts":       posts,
@@ -270,6 +283,9 @@ func GenerateStaticIndex() {
 
 func GenerateStaticPost(slug string) {
 	if !config.Cfg.Static.Enable {
+		return
+	}
+	if !IsValidSlug(slug) {
 		return
 	}
 	staticGenMu.Lock()
@@ -326,12 +342,18 @@ func GenerateStaticColumnByID(columnID uint) {
 }
 
 func genColumnStatic(tpl *template.Template, col models.Column, columns []models.Column, settings map[string]string) {
+	if !IsValidSlug(col.Slug) {
+		log.Printf("静态生成: 跳过非法栏目 slug id=%d slug=%q", col.ID, col.Slug)
+		return
+	}
+
 	var columnIDs []uint
 	collectColumnIDsCache(&columnIDs, col.ID)
 	columnIDs = append(columnIDs, col.ID)
 
 	var colPosts []models.Post
 	database.DB.Where("column_id IN ? AND published = ?", columnIDs, true).Preload("Column").Order("id desc").Find(&colPosts)
+	colPosts = filterValidFrontPosts(colPosts)
 	data := map[string]interface{}{
 		"posts":       colPosts,
 		"columns":     columns,
@@ -344,4 +366,16 @@ func genColumnStatic(tpl *template.Template, col models.Column, columns []models
 	}
 
 	writeStaticFile(tpl, filepath.Join("column", col.Slug+".html"), data)
+}
+
+func filterValidFrontPosts(posts []models.Post) []models.Post {
+	valid := posts[:0]
+	for _, post := range posts {
+		if !IsValidSlug(post.Slug) {
+			log.Printf("前台输出: 跳过非法文章 slug id=%d slug=%q", post.ID, post.Slug)
+			continue
+		}
+		valid = append(valid, post)
+	}
+	return valid
 }

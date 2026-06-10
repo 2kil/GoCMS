@@ -5,7 +5,7 @@
 {{end}}
 <div class="card shadow-sm">
     <div class="card-body">
-        <form method="post" action="/adm1n/posts/save/{{if .post.ID}}{{.post.ID}}{{else}}new{{end}}">
+        <form method="post" action="/adm1n/posts/save/{{if .post.ID}}{{.post.ID}}{{else}}new{{end}}" id="postEditForm">
             <div class="mb-3">
                 <label class="form-label">标题</label>
                 <input type="text" name="title" class="form-control" value="{{.post.Title}}" required>
@@ -88,7 +88,9 @@
                     </div>
                 </div>
                 <input type="file" id="uploadImageInput" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp">
-                <div class="form-text" id="uploadImageStatus"></div>
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                    <div class="form-text m-0" id="uploadImageStatus"></div>
+                </div>
             </div>
             <div class="row g-3 align-items-start mb-3">
                 <div class="col-md-3">
@@ -141,10 +143,34 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="contentImagePickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">选择已上传图片</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                {{if .uploadedImages}}
+                <div class="cover-picker-grid">
+                    {{range .uploadedImages}}
+                    <button type="button" class="cover-picker-item" data-content-image-url="{{.URL}}" data-content-image-name="{{.Name}}" title="{{.Name}}">
+                        <img src="{{.URL}}" alt="{{.Name}}">
+                        <span>{{.Name}}</span>
+                    </button>
+                    {{end}}
+                </div>
+                {{else}}
+                <div class="empty-state">服务器中暂无已上传图片。</div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/easymde@2/dist/easymde.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
 <script>
-const postForm=document.querySelector('form');
+const postForm=document.getElementById('postEditForm');
 const markdownPanel=document.getElementById('markdownEditorPanel');
 const richPanel=document.getElementById('richEditorPanel');
 const contentTextarea=document.getElementById('editor');
@@ -156,6 +182,7 @@ const coverImagePreview=document.getElementById('coverImagePreview');
 const uploadCoverInput=document.getElementById('uploadCoverInput');
 const uploadCoverStatus=document.getElementById('uploadCoverStatus');
 const coverPickerModalElement=document.getElementById('coverPickerModal');
+const contentImagePickerModalElement=document.getElementById('contentImagePickerModal');
 const uploadImageInput=document.getElementById('uploadImageInput');
 const uploadImageStatus=document.getElementById('uploadImageStatus');
 const imageSizeToolbar=document.getElementById('imageSizeToolbar');
@@ -196,6 +223,10 @@ function getCoverPickerModal(){
     if(!coverPickerModalElement || !window.bootstrap){return null;}
     return bootstrap.Modal.getOrCreateInstance(coverPickerModalElement);
 }
+function getContentImagePickerModal(){
+    if(!contentImagePickerModalElement || !window.bootstrap){return null;}
+    return bootstrap.Modal.getOrCreateInstance(contentImagePickerModalElement);
+}
 const initialCoverClear=document.getElementById('coverImageClear');
 if(initialCoverClear){
     initialCoverClear.addEventListener('click',clearCoverImage);
@@ -212,7 +243,7 @@ coverImagePreview.addEventListener('click',event=>{
         uploadCoverInput.click();
     }
 });
-document.querySelectorAll('.cover-picker-item').forEach(item=>{
+document.querySelectorAll('[data-cover-url]').forEach(item=>{
     item.addEventListener('click',()=>{
         coverImageInput.value=item.dataset.coverUrl;
         syncCoverPreview();
@@ -233,6 +264,12 @@ const easyMDE=new EasyMDE({
             action:()=>selectUploadTarget('markdown'),
             className:'fa fa-upload',
             title:'上传图片'
+        },
+        {
+            name:'choose-uploaded-image',
+            action:()=>openContentImagePicker(),
+            className:'fa fa-picture-o',
+            title:'选择已上传图片'
         },
         '|','preview','side-by-side','fullscreen','|','guide'
     ]
@@ -264,6 +301,27 @@ document.querySelectorAll('.editor-toolbar button').forEach(button=>{
 const SizeStyle=Quill.import('attributors/style/size');
 SizeStyle.whitelist=['12px','14px','16px','18px','20px','24px','28px','32px','36px','48px'];
 Quill.register(SizeStyle,true);
+const BaseImageBlot=Quill.import('formats/image');
+class CmsImageBlot extends BaseImageBlot{
+    static formats(domNode){
+        const formats=super.formats(domNode)||{};
+        const style=domNode.getAttribute('style');
+        if(style){formats.style=style;}
+        return formats;
+    }
+    format(name,value){
+        if(name==='style'){
+            if(value){
+                this.domNode.setAttribute('style',value);
+            }else{
+                this.domNode.removeAttribute('style');
+            }
+            return;
+        }
+        super.format(name,value);
+    }
+}
+Quill.register(CmsImageBlot,true);
 const FontStyle=Quill.import('attributors/style/font');
 FontStyle.whitelist=['Arial','Microsoft YaHei','SimSun','SimHei','Times New Roman','Courier New'];
 Quill.register(FontStyle,true);
@@ -284,11 +342,12 @@ const quill=new Quill('#richEditor',{
                 [{indent:'-1'},{indent:'+1'}],
                 [{script:'sub'},{script:'super'}],
                 ['blockquote','code-block'],
-                ['link','image'],
+                ['link','image','uploadedImage'],
                 ['clean']
             ],
             handlers:{
-                image:()=>selectUploadTarget('html')
+                image:()=>selectUploadTarget('html'),
+                uploadedImage:()=>openContentImagePicker()
             }
         }
     }
@@ -314,10 +373,14 @@ const quillTitleMap=[
     ['.ql-code-block','代码块'],
     ['.ql-link','插入链接'],
     ['.ql-image','上传图片'],
+    ['.ql-uploadedImage','选择已上传图片'],
     ['.ql-clean','清除格式']
 ];
 quillTitleMap.forEach(([selector,title])=>{
     document.querySelectorAll(selector).forEach(element=>{
+        if(selector==='.ql-uploadedImage'){
+            element.innerHTML='<i class="bi bi-image"></i>';
+        }
         element.setAttribute('title',title);
         element.setAttribute('aria-label',title);
     });
@@ -529,6 +592,21 @@ function selectUploadTarget(target){
     uploadTarget=target;
     uploadImageInput.click();
 }
+function openContentImagePicker(){
+    const modal=getContentImagePickerModal();
+    if(modal){modal.show();}
+}
+function insertContentImage(url, alt, target){
+    const insertTarget=target || (formatHtml.checked?'html':'markdown');
+    if(insertTarget==='html'){
+        const range=quill.getSelection(true);
+        quill.insertEmbed(range.index,'image',url);
+        quill.setSelection(range.index+1);
+        return;
+    }
+    easyMDE.codemirror.replaceSelection(`![${alt}](${url})`);
+    easyMDE.codemirror.focus();
+}
 function syncEditorMode(){
     const richMode=formatHtml.checked;
     markdownPanel.classList.toggle('d-none',richMode);
@@ -536,6 +614,16 @@ function syncEditorMode(){
 }
 formatMarkdown.addEventListener('change',syncEditorMode);
 formatHtml.addEventListener('change',syncEditorMode);
+document.querySelectorAll('[data-content-image-url]').forEach(item=>{
+    item.addEventListener('click',()=>{
+        const url=item.dataset.contentImageUrl;
+        const alt=(item.dataset.contentImageName||'图片').replace(/\.[^.]+$/,'')||'图片';
+        insertContentImage(url,alt);
+        uploadImageStatus.textContent='已插入图片';
+        const modal=getContentImagePickerModal();
+        if(modal){modal.hide();}
+    });
+});
 uploadCoverInput.addEventListener('change',async()=>{
     const file=uploadCoverInput.files[0];
     if(!file){return;}
@@ -571,14 +659,7 @@ uploadImageInput.addEventListener('change',async()=>{
         const result=await response.json();
         if(!response.ok){throw new Error(result.error||'上传失败');}
         const alt=file.name.replace(/\.[^.]+$/,'')||'图片';
-        if(uploadTarget==='html'){
-            const range=quill.getSelection(true);
-            quill.insertEmbed(range.index,'image',result.url);
-            quill.setSelection(range.index+1);
-        }else{
-            easyMDE.codemirror.replaceSelection(`![${alt}](${result.url})`);
-            easyMDE.codemirror.focus();
-        }
+        insertContentImage(result.url,alt,uploadTarget);
         uploadImageStatus.textContent='已插入图片';
     }catch(err){
         uploadImageStatus.textContent=err.message;

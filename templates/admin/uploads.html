@@ -1,7 +1,17 @@
 {{template "header.html" dict "title" "图片管理" "nickname" .nickname}}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <h2 class="page-title mb-0">图片管理</h2>
-    <span class="badge text-bg-light upload-count">共 {{.count}} 张图片</span>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="badge text-bg-light upload-count">共 {{.count}} 张图片</span>
+        <form method="post" action="/adm1n/uploads/upload" enctype="multipart/form-data" class="upload-batch-form">
+            <input type="file" name="images" id="batchUploadInput" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+            <button type="button" class="btn btn-deepgreen btn-sm" id="batchUploadChooseBtn"><i class="bi bi-cloud-arrow-up me-1"></i>上传图片</button>
+            <button type="submit" class="btn btn-outline-deepgreen btn-sm d-none" id="batchUploadSubmitBtn">开始上传</button>
+            <span class="small text-muted" id="batchUploadName"></span>
+        </form>
+        <form method="post" action="/adm1n/uploads/delete-selected" id="batchDeleteForm" class="d-inline"></form>
+        <button type="button" class="btn btn-outline-danger btn-sm" id="batchDeleteBtn" disabled><i class="bi bi-trash me-1"></i>删除选中</button>
+    </div>
 </div>
 
 <div class="card shadow-sm">
@@ -11,6 +21,7 @@
             <table class="table upload-table align-middle">
                 <thead>
                     <tr>
+                        <th style="width: 46px;"><input type="checkbox" class="form-check-input" id="selectAllUploads" aria-label="全选图片"></th>
                         <th>预览</th>
                         <th>文件名</th>
                         <th>上传日期</th>
@@ -22,6 +33,7 @@
                 <tbody>
                     {{range .images}}
                     <tr>
+                        <td><input type="checkbox" class="form-check-input upload-select" value="{{.Month}}	{{.Name}}" aria-label="选择图片 {{.Name}}"></td>
                         <td>
                             <button type="button" class="upload-list-thumb" data-bs-toggle="modal" data-bs-target="#previewUploadModal" data-url="{{.URL}}" data-name="{{.Name}}">
                                 <img src="{{.URL}}" alt="{{.Name}}">
@@ -101,6 +113,57 @@
 </div>
 
 <script>
+const selectAllUploads=document.getElementById('selectAllUploads');
+const uploadSelects=Array.from(document.querySelectorAll('.upload-select'));
+const batchDeleteBtn=document.getElementById('batchDeleteBtn');
+const batchDeleteForm=document.getElementById('batchDeleteForm');
+const batchUploadInput=document.getElementById('batchUploadInput');
+const batchUploadChooseBtn=document.getElementById('batchUploadChooseBtn');
+const batchUploadSubmitBtn=document.getElementById('batchUploadSubmitBtn');
+const batchUploadName=document.getElementById('batchUploadName');
+
+function selectedUploadItems(){
+    return uploadSelects.filter(input=>input.checked).map(input=>input.value);
+}
+
+function refreshBatchDeleteState(){
+    const selectedCount=selectedUploadItems().length;
+    batchDeleteBtn.disabled=selectedCount===0;
+    batchDeleteBtn.innerHTML='<i class="bi bi-trash me-1"></i>'+(selectedCount>0?'删除选中 '+selectedCount:'删除选中');
+    if(selectAllUploads){
+        selectAllUploads.checked=selectedCount>0&&selectedCount===uploadSelects.length;
+        selectAllUploads.indeterminate=selectedCount>0&&selectedCount<uploadSelects.length;
+    }
+}
+
+if(selectAllUploads){
+    selectAllUploads.addEventListener('change',()=>{
+        uploadSelects.forEach(input=>{input.checked=selectAllUploads.checked;});
+        refreshBatchDeleteState();
+    });
+}
+uploadSelects.forEach(input=>input.addEventListener('change',refreshBatchDeleteState));
+batchDeleteBtn.addEventListener('click',()=>{
+    const items=selectedUploadItems();
+    if(items.length===0){return;}
+    if(!confirm('确定删除选中的 '+items.length+' 张图片吗？')){return;}
+    batchDeleteForm.innerHTML='';
+    items.forEach(value=>{
+        const input=document.createElement('input');
+        input.type='hidden';
+        input.name='items';
+        input.value=value;
+        batchDeleteForm.appendChild(input);
+    });
+    batchDeleteForm.requestSubmit();
+});
+batchUploadChooseBtn.addEventListener('click',()=>batchUploadInput.click());
+batchUploadInput.addEventListener('change',()=>{
+    const count=batchUploadInput.files.length;
+    batchUploadSubmitBtn.classList.toggle('d-none',count===0);
+    batchUploadName.textContent=count>0?'已选择 '+count+' 张图片':'';
+});
+
 document.querySelectorAll('.upload-rename-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
         const month=btn.dataset.month;

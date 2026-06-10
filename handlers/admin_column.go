@@ -220,6 +220,10 @@ func SaveColumn(c *gin.Context) {
 		slug = uuid.New().String()
 	}
 	column.Slug = slug
+	if !IsValidSlug(slug) {
+		renderColumnEditWithError(c, column, "Slug 只能使用字母、数字、横线和下划线，且必须以字母或数字开头")
+		return
+	}
 	column.IsPage = isPage
 	column.Content = content
 	if isPage {

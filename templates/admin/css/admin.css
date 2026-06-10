@@ -646,6 +646,51 @@ body {
     width: 96px;
 }
 
+.ql-toolbar.ql-snow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+}
+
+.ql-toolbar.ql-snow .ql-formats {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-right: 10px;
+}
+
+.ql-toolbar.ql-snow button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+}
+
+.ql-toolbar.ql-snow button svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+}
+
+.ql-toolbar.ql-snow button .bi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: #444;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.ql-toolbar.ql-snow button:hover .bi,
+.ql-toolbar.ql-snow button:focus .bi {
+    color: #06c;
+}
+
 .column-sort-list {
     display: grid;
     gap: 10px;

@@ -68,42 +68,35 @@ func DeleteUpload(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/adm1n/uploads")
 }
 
+func DeleteUploads(c *gin.Context) {
+	for _, item := range c.PostFormArray("items") {
+		parts := strings.SplitN(item, "\t", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		path, err := uploadImagePath(parts[0], parts[1])
+		if err == nil {
+			os.Remove(path)
+		}
+	}
+	c.Redirect(http.StatusFound, "/adm1n/uploads")
+}
+
 func loadUploadedImages() []uploadImageItem {
+	var items []uploadImageItem
+
 	root := config.ResolvePath("upload")
 	entries, err := os.ReadDir(root)
-	if err != nil {
-		return nil
-	}
-
-	var items []uploadImageItem
-	for _, entry := range entries {
-		if !entry.IsDir() || !isUploadMonthDir(entry.Name()) {
-			continue
-		}
-		month := entry.Name()
-		dir := filepath.Join(root, month)
-		files, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, file := range files {
-			if file.IsDir() || !isAllowedImageExt(strings.ToLower(filepath.Ext(file.Name()))) {
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() || !isUploadMonthDir(entry.Name()) {
 				continue
 			}
-			info, err := file.Info()
-			if err != nil {
-				continue
-			}
-			items = append(items, uploadImageItem{
-				Name:      file.Name(),
-				URL:       "/upload/" + month + "/" + url.PathEscape(file.Name()),
-				Month:     month,
-				Date:      info.ModTime().Format("2006-01-02 15:04"),
-				Size:      formatFileSize(info.Size()),
-				SizeBytes: info.Size(),
-			})
+			month := entry.Name()
+			items = appendUploadImageItems(items, filepath.Join(root, month), month, "/upload/"+month+"/")
 		}
 	}
+	items = appendUploadImageItems(items, config.ResolvePath(filepath.Join("static", "uploads")), "static", "/static/uploads/")
 
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].Month == items[j].Month {
@@ -114,11 +107,43 @@ func loadUploadedImages() []uploadImageItem {
 	return items
 }
 
+func appendUploadImageItems(items []uploadImageItem, dir, month, urlPrefix string) []uploadImageItem {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return items
+	}
+	for _, file := range files {
+		if file.IsDir() || !isAllowedImageExt(strings.ToLower(filepath.Ext(file.Name()))) {
+			continue
+		}
+		info, err := file.Info()
+		if err != nil {
+			continue
+		}
+		items = append(items, uploadImageItem{
+			Name:      file.Name(),
+			URL:       urlPrefix + url.PathEscape(file.Name()),
+			Month:     month,
+			Date:      info.ModTime().Format("2006-01-02 15:04"),
+			Size:      formatFileSize(info.Size()),
+			SizeBytes: info.Size(),
+		})
+	}
+	return items
+}
+
 func uploadImagePath(month, name string) (string, error) {
-	if !isUploadMonthDir(month) || name == "" || filepath.Base(name) != name || !isAllowedImageExt(strings.ToLower(filepath.Ext(name))) {
+	if !isUploadBucket(month) || name == "" || filepath.Base(name) != name || !isAllowedImageExt(strings.ToLower(filepath.Ext(name))) {
 		return "", os.ErrInvalid
 	}
+	if month == "static" {
+		return filepath.Join(config.ResolvePath(filepath.Join("static", "uploads")), name), nil
+	}
 	return filepath.Join(config.ResolvePath("upload"), month, name), nil
+}
+
+func isUploadBucket(name string) bool {
+	return name == "static" || isUploadMonthDir(name)
 }
 
 func normalizeUploadFileName(name, fallbackExt string) string {
