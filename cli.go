@@ -442,9 +442,17 @@ func runUploadCLI(action string, opts cliOptions) {
 		if err != nil {
 			fail("图片路径无效")
 		}
+		oldURL, err := handlers.UploadImageURL(month, name)
+		if err != nil {
+			fail("图片地址无效")
+		}
 		newPath, err := cliUploadImagePath(month, newName)
 		if err != nil {
 			fail("新图片路径无效")
+		}
+		newURL, err := handlers.UploadImageURL(month, newName)
+		if err != nil {
+			fail("新图片地址无效")
 		}
 		if _, err := os.Stat(newPath); err == nil {
 			fail("目标文件已存在: %s", newName)
@@ -452,6 +460,11 @@ func runUploadCLI(action string, opts cliOptions) {
 		if err := os.Rename(oldPath, newPath); err != nil {
 			fail("图片重命名失败: %v", err)
 		}
+		if err := handlers.ReplaceUploadReferences(oldURL, newURL); err != nil {
+			_ = os.Rename(newPath, oldPath)
+			fail("更新文章图片引用失败: %v", err)
+		}
+		afterContentChange()
 		fmt.Printf("图片已重命名: %s/%s -> %s/%s\n", month, name, month, newName)
 	case "delete":
 		month := required(opts, "month")
@@ -459,6 +472,17 @@ func runUploadCLI(action string, opts cliOptions) {
 		path, err := cliUploadImagePath(month, name)
 		if err != nil {
 			fail("图片路径无效")
+		}
+		imageURL, err := handlers.UploadImageURL(month, name)
+		if err != nil {
+			fail("图片地址无效")
+		}
+		refCount, err := handlers.CountUploadReferences(imageURL)
+		if err != nil {
+			fail("检查图片引用失败: %v", err)
+		}
+		if refCount > 0 {
+			fail("图片正在被 %d 篇文章引用，不能删除", refCount)
 		}
 		if err := os.Remove(path); err != nil {
 			fail("图片删除失败: %v", err)

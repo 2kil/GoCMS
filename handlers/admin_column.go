@@ -282,7 +282,7 @@ func SaveColumn(c *gin.Context) {
 	}
 
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/columns")
 }
 
@@ -301,7 +301,7 @@ func DeleteColumn(c *gin.Context) {
 	database.DB.Model(&models.Column{}).Where("parent_id = ?", id).Update("parent_id", nil)
 	database.DB.Delete(&column)
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/columns")
 }
 
@@ -340,6 +340,6 @@ func ReorderColumns(c *gin.Context) {
 	}
 
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

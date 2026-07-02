@@ -15,6 +15,8 @@ import (
 )
 
 const maxUploadImageSize = 5 << 20
+const maxBatchUploadCount = 30
+const maxBatchUploadTotalSize = 50 << 20
 
 func UploadImage(c *gin.Context) {
 	month := time.Now().Format("200601")
@@ -29,22 +31,53 @@ func UploadCoverImage(c *gin.Context) {
 func UploadImages(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.Redirect(http.StatusFound, "/adm1n/uploads")
+		redirectUploads(c, "error", "读取上传文件失败")
 		return
 	}
 	files := form.File["images"]
 	if len(files) == 0 {
-		c.Redirect(http.StatusFound, "/adm1n/uploads")
+		redirectUploads(c, "error", "请选择图片文件")
+		return
+	}
+	if len(files) > maxBatchUploadCount {
+		redirectUploads(c, "error", fmt.Sprintf("一次最多上传 %d 张图片", maxBatchUploadCount))
+		return
+	}
+	var totalSize int64
+	for _, file := range files {
+		totalSize += file.Size
+	}
+	if totalSize > maxBatchUploadTotalSize {
+		redirectUploads(c, "error", "一次上传总大小不能超过 50MB")
 		return
 	}
 
 	month := time.Now().Format("200601")
+	saved := 0
+	failed := 0
+	firstErr := ""
 	for _, file := range files {
 		if _, err := saveUploadedImageFile(c, file, "upload", month, "/upload/"+month+"/"); err != nil {
+			failed++
+			if firstErr == "" {
+				firstErr = err.Error()
+			}
 			continue
 		}
+		saved++
 	}
-	c.Redirect(http.StatusFound, "/adm1n/uploads")
+	if saved == 0 {
+		if firstErr == "" {
+			firstErr = "上传失败"
+		}
+		redirectUploads(c, "error", firstErr)
+		return
+	}
+	if failed > 0 {
+		redirectUploads(c, "error", fmt.Sprintf("已上传 %d 张，%d 张失败：%s", saved, failed, firstErr))
+		return
+	}
+	redirectUploads(c, "success", fmt.Sprintf("已上传 %d 张图片", saved))
 }
 
 func saveUploadedImage(c *gin.Context, baseDir, subDir, urlPrefix string) {

@@ -47,4 +47,20 @@
         </tbody>
     </table>
 </div>
+{{if gt .totalPages 1}}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+    <div class="text-muted small">共 {{.totalPosts}} 篇文章，每页 {{.pageSize}} 篇，第 {{.page}} / {{.totalPages}} 页</div>
+    <nav aria-label="文章分页">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item {{if not .hasPrevPage}}disabled{{end}}">
+                <a class="page-link" href="{{if .hasPrevPage}}/adm1n/posts?page={{.prevPage}}{{else}}#{{end}}">上一页</a>
+            </li>
+            <li class="page-item disabled"><span class="page-link">{{.page}}</span></li>
+            <li class="page-item {{if not .hasNextPage}}disabled{{end}}">
+                <a class="page-link" href="{{if .hasNextPage}}/adm1n/posts?page={{.nextPage}}{{else}}#{{end}}">下一页</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+{{end}}
 {{template "footer.html"}}

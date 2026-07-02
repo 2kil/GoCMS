@@ -81,7 +81,7 @@ func SaveTag(c *gin.Context) {
 	}
 
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/tags")
 }
 
@@ -101,6 +101,6 @@ func DeleteTag(c *gin.Context) {
 
 	database.DB.Delete(&tag)
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/tags")
 }

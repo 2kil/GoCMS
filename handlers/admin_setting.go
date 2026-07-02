@@ -24,7 +24,7 @@ func SaveSettings(c *gin.Context) {
 	saveSettingsKeys(c, keys)
 
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/settings")
 }
 

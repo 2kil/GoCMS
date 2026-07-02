@@ -89,6 +89,7 @@ func setupLog() {
 
 func runServer() {
 	handlers.GenerateStatic()
+	handlers.StartStaticGenerator()
 	handlers.StartPostScheduler()
 	startRefreshWatcher()
 

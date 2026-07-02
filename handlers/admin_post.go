@@ -12,6 +12,8 @@ import (
 	"shuaitesteel.com/cms/models"
 )
 
+const adminPostPageSize = 20
+
 func Dashboard(c *gin.Context) {
 	var postCount int64
 	var publishedCount int64
@@ -60,11 +62,36 @@ func Dashboard(c *gin.Context) {
 
 func ListPosts(c *gin.Context) {
 	var posts []models.Post
-	database.DB.Preload("Column").Preload("User").Order("id desc").Find(&posts)
+	var totalPosts int64
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+	database.DB.Model(&models.Post{}).Count(&totalPosts)
+	totalPages := int((totalPosts + int64(adminPostPageSize) - 1) / int64(adminPostPageSize))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	if page > totalPages {
+		page = totalPages
+	}
+	database.DB.Preload("Column").Preload("User").
+		Order("id desc").
+		Limit(adminPostPageSize).
+		Offset((page - 1) * adminPostPageSize).
+		Find(&posts)
 
 	c.HTML(http.StatusOK, "posts.html", gin.H{
-		"posts":    posts,
-		"nickname": c.MustGet("nickname"),
+		"posts":       posts,
+		"page":        page,
+		"pageSize":    adminPostPageSize,
+		"totalPosts":  totalPosts,
+		"totalPages":  totalPages,
+		"hasPrevPage": page > 1,
+		"hasNextPage": page < totalPages,
+		"prevPage":    page - 1,
+		"nextPage":    page + 1,
+		"nickname":    c.MustGet("nickname"),
 	})
 }
 
@@ -136,13 +163,9 @@ func SavePost(c *gin.Context) {
 	post.CoverImage = coverImage
 	post.Published = published
 	post.ScheduledAt = nil
-	if !published && scheduled && scheduledAtStr != "" {
-		if scheduledAt, err := time.ParseInLocation("2006-01-02T15:04", scheduledAtStr, time.Local); err == nil {
-			post.ScheduledAt = &scheduledAt
-		}
+	if post.ID == 0 || post.UserID == 0 {
+		post.UserID = userID
 	}
-	post.UserID = userID
-
 	if columnIDStr != "" {
 		cid, err := strconv.ParseUint(columnIDStr, 10, 64)
 		if err == nil {
@@ -151,6 +174,18 @@ func SavePost(c *gin.Context) {
 		}
 	} else {
 		post.ColumnID = nil
+	}
+	if !published && scheduled {
+		if scheduledAtStr == "" {
+			renderPostEditSaveError(c, post, "请填写定时发布时间")
+			return
+		}
+		scheduledAt, err := time.ParseInLocation("2006-01-02T15:04", scheduledAtStr, time.Local)
+		if err != nil {
+			renderPostEditSaveError(c, post, "定时发布时间格式无效")
+			return
+		}
+		post.ScheduledAt = &scheduledAt
 	}
 
 	if !IsValidSlug(slug) {
@@ -170,7 +205,7 @@ func SavePost(c *gin.Context) {
 	}
 
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/posts")
 }
 
@@ -222,7 +257,7 @@ func TogglePost(c *gin.Context) {
 		})
 	}
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/posts")
 }
 
@@ -240,6 +275,6 @@ func DeletePost(c *gin.Context) {
 	}
 	database.DB.Delete(&post)
 	InvalidateCache()
-	GenerateStatic()
+	RequestGenerateStatic()
 	c.Redirect(http.StatusFound, "/adm1n/posts")
 }
